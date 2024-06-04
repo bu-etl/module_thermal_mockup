@@ -19,7 +19,7 @@ Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet,DNP,LCSC,Mfg,PartNum
 10,1,J1,Barrel_Jack,Connector:Barrel_Jack,Connector_BarrelJack:BarrelJack_CUI_PJ-063AH_Horizontal,https://www.cuidevices.com/product/resource/pj-063ah.pdf,,,,PJ-063AH
 11,4,"J2, J3, J4, J5",Header-M_2x6,Connector_Generic:Conn_02x06_Counter_Clockwise,Connector_PinHeader_2.54mm:PinHeader_2x06_P2.54mm_Vertical_SMD,~,,,,5-146130-5
 12,2,"J6, J9",Header_1x8,Connector:Conn_01x08_Socket,Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical,https://suddendocs.samtec.com/prints/esq-1xx-xx-x-x-xxx-xx-x-xx-mkt.pdf,,,,ESQ-108-14-T-S
-13,1,J7,Header_1x8,Connector:Conn_01x06_Socket,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,https://suddendocs.samtec.com/prints/esq-1xx-xx-x-x-xxx-xx-x-xx-mkt.pdf,,,,ESQ-106-14-T-S
+13,1,J7,Header_1x6,Connector:Conn_01x06_Socket,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,https://suddendocs.samtec.com/prints/esq-1xx-xx-x-x-xxx-xx-x-xx-mkt.pdf,,,,ESQ-106-14-T-S
 14,1,J8,Header_1x10,Connector:Conn_01x10_Socket,Connector_PinHeader_2.54mm:PinHeader_1x10_P2.54mm_Vertical,https://suddendocs.samtec.com/prints/esq-1xx-xx-x-x-xxx-xx-x-xx-mkt.pdf,,,,ESQ-110-14-T-S
 15,8,"Q1, Q2, Q3, Q4, Q5, Q6, Q7, Q8",PMOS,Device:Q_Dual_PMOS_S1G1D2S2G2D1,Package_TO_SOT_SMD:SOT-363_SC-70-6,https://www.vishay.com/docs/68784/SI1967DH.pdf,,,,SI1967DH-T1-BE3
 16,2,"Q9, Q10",NMOS,Device:Q_Dual_NMOS_G1S2G2D2S1D1,Package_TO_SOT_SMD:SOT-23-6,https://www.diodes.com/assets/Datasheets/DMN3135LVT.pdf,,,,DMN3135LVT-7
