@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <map>
+#include <functional>
 #include "command.h"
 
 // Pin Assignments
@@ -7,7 +9,6 @@
 #define PIN_CLK 2
 #define PIN_CS_B 3
 #define PIN_RST_B 4
-#define PIN_RDY_B 5
 #define PIN_ENABLE_B 6
 #define PIN_SEL_0 8
 #define PIN_SEL_1 9
@@ -120,16 +121,29 @@ Command parse_command(String line) {
   int split;
   line.trim();
 
+  // Parse the command
   split = line.indexOf(' ');
   if (split < 0) split = line.length();
   command.cmd = line.substring(0, split);
   line = line.substring(split);
   line.trim();
 
+  // Parse the flag
+  if (line.length() > 0 && line.charAt(0) == '-') {
+    split = line.indexOf(' ');
+    if (split < 0) split = line.length();
+    command.flag = line.substring(1, split);
+    line = line.substring(split);
+    line.trim();
+  } else {
+    command.flag = "";
+  }
+
+  // Parse the arguments
   while(line.length() > 0 && command.nargs < MAX_ARGS) {
     split = line.indexOf(' ');
     if (split < 0) split = line.length();
-    command.args[command.nargs] = line.substring(0, split);
+    command.args[command.nargs] = line.substring(1, split);
     command.args[command.nargs].trim();
     command.nargs++;
     line = line.substring(split);
@@ -217,7 +231,7 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
   return value;
 }
 
-void reset() {
+void rst() {
   digitalWrite(PIN_RST_B, LOW);
   delayMicroseconds(100);
   digitalWrite(PIN_RST_B, HIGH);
@@ -273,26 +287,54 @@ unsigned long read_channel(unsigned char channel_id) {
 
 
   unsigned long try_count = 0;
-  while (digitalRead(PIN_RDY_B)) {
-    delay(10);
+  while(true) {
+    unsigned long status_value = read_register(REG_STATUS, 8);
+    if (status_value & STATUS_RDY) break;
     try_count++;
     if (try_count > 1000) {
       Serial.println("ERROR: Unable to read ADC value, timeout.");
       return 0;
-    }
+   }
   }
+
   // unsigned long status = read_register(REG_STATUS, 8);
   // Serial.printf("status:  %08x\n", status);
   unsigned long adc_value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
   return adc_value;
 }
 
+
+/* ----------------------------------------------------- 
+  Command Functions
+----------------------------------------------------- */
+void reset(Command cmd) {
+  Serial.println("Resetting...");
+}
+
+void calibrate(Command cmd) {
+  Serial.print("Calibrating...");
+}
+
+void measure(Command cmd) {
+  Serial.println("Measuring...");
+}
+
+void status(Command cmd) {
+  Serial.println("Status...");
+}
+
 /* ----------------------------------------------------- 
   Setup 
 ----------------------------------------------------- */
+std::map<String, std::function<void(Command)>> command_map;
+
 void setup() {
+  command_map["reset"] = reset;
+  command_map["calibrate"] = calibrate;
+  command_map["measure"] = measure;
+  command_map["status"] = status;
+
   pinMode(PIN_DOUT, INPUT_PULLUP);
-  pinMode(PIN_RDY_B, INPUT);
 
   pinMode(PIN_CLK, OUTPUT);
   pinMode(PIN_DIN, OUTPUT);
@@ -325,11 +367,19 @@ void setup() {
   Serial.begin(9600);
 }
 
+/* ----------------------------------------------------- 
+  Main Logic Loop 
+----------------------------------------------------- */
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+  if (Serial.available() == 0) return;
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+  String line = Serial.readStringUntil('\n');
+
+  Command command = parse_command(line);
+  
+  if (command_map.find(command.cmd) != command_map.end()) {
+    command_map[command.cmd](command);
+  } else {
+    Serial.println("ERROR: Unknown command");
+  }
 }
