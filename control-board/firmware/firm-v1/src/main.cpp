@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <map>
-#include <functional>
 #include "command.h"
 
 // Pin Assignments
@@ -323,17 +321,23 @@ void status(Command cmd) {
   Serial.println("Status...");
 }
 
+void unknown_command(Command cmd) {
+  Serial.println("ERROR: Unknown command");
+}
+
+
 /* ----------------------------------------------------- 
   Setup 
 ----------------------------------------------------- */
-std::map<String, std::function<void(Command)>> command_map;
+CommandEntry command_table[] = {
+  {"reset", reset},
+  {"calibrate", calibrate},
+  {"measure", measure},
+  {"status", status},
+  {NULL, unknown_command}
+};
 
 void setup() {
-  command_map["reset"] = reset;
-  command_map["calibrate"] = calibrate;
-  command_map["measure"] = measure;
-  command_map["status"] = status;
-
   pinMode(PIN_DOUT, INPUT_PULLUP);
 
   pinMode(PIN_CLK, OUTPUT);
@@ -377,9 +381,13 @@ void loop() {
 
   Command command = parse_command(line);
   
-  if (command_map.find(command.cmd) != command_map.end()) {
-    command_map[command.cmd](command);
-  } else {
-    Serial.println("ERROR: Unknown command");
+  bool found = false;
+  for (int i = 0; command_table[i].name != NULL; i++) {
+    if (command.cmd == command_table[i].name) {
+      command_table[i].func(command);
+      found = true;
+      break;
+    }
   }
+  if (!found) unknown_command(command);
 }
