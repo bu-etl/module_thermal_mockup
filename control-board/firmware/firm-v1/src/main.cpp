@@ -78,6 +78,24 @@
 #define MODE_SYSTEM_ZERO_SCALE_CALIBRATION 0x06
 #define MODE_SYSTEM_FULL_SCALE_CALIBRATION 0x07
 
+// TM Chip Select Addresses
+#define TM_1_ADC 0x0
+#define TM_1_PROBE_1 0x1
+#define TM_1_PROBE_2 0x2
+#define TM_1_PROBE_3 0x3
+#define TM_2_ADC 0x4
+#define TM_2_PROBE_1 0x5
+#define TM_2_PROBE_2 0x6
+#define TM_2_PROBE_3 0x7
+#define TM_3_ADC 0x8
+#define TM_3_PROBE_1 0x9
+#define TM_3_PROBE_2 0xA
+#define TM_3_PROBE_3 0xB
+#define TM_4_ADC 0xC
+#define TM_4_PROBE_1 0xD
+#define TM_4_PROBE_2 0xE
+#define TM_4_PROBE_3 0xF
+
 /* ----------------------------------------------------- 
   Parsing Functions
 ----------------------------------------------------- */
@@ -161,6 +179,12 @@ void clk() {
   digitalWrite(PIN_CLK, LOW);
 }
 
+void chip_select(unsigned int addr) {
+  digitalWrite(PIN_SEL_0, 0x1 & addr);
+  digitalWrite(PIN_SEL_1, 0x1 & (addr>>1));
+  digitalWrite(PIN_SEL_2, 0x1 & (addr>>2));
+  digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
+}
 
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
@@ -306,7 +330,33 @@ unsigned long read_channel(unsigned char channel_id) {
   Command Functions
 ----------------------------------------------------- */
 void reset(Command cmd) {
-  Serial.println("Resetting...");
+  if (cmd.flag == "") {
+    // loop through and reset ALL TM ADCs if no flag was given 
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      rst();
+    }
+    return;
+  }
+
+  // reset specific TM ADCs based on flag
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    switch (board)
+    {
+    case 'a':
+      chip_select(TM_1_ADC); rst(); break;
+    case 'b':
+      chip_select(TM_2_ADC); rst(); break;
+    case 'c':
+      chip_select(TM_3_ADC); rst(); break;
+    case 'd': 
+      chip_select(TM_4_ADC); rst(); break;
+    default:
+      Serial.println("ERROR: Invalid board selected for reset command.");
+      break;
+    }
+  }
 }
 
 void calibrate(Command cmd) {
