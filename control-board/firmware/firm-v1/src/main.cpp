@@ -108,7 +108,7 @@ unsigned char hex2char(String s) {
   for (uint8_t i=0; i<2; i++) {
     out = out << 4;
     char current = s.charAt(i);
-    switch (current) {
+    switch (toupper(current)) {
       case '0': out = out | 0x0; break;
       case '1': out = out | 0x1; break;
       case '2': out = out | 0x2; break;
@@ -204,6 +204,17 @@ int board_select(char board) {
   }
   return 0;
 }
+
+char cs2TM(int i) {
+  switch (i) {
+    case 0x0 ... 0x3: return 'a';
+    case 0x4 ... 0x7: return 'b';
+    case 0x8 ... 0xB: return 'c';
+    case 0xC ... 0xF: return 'd';
+    default: return -1;
+  }
+}
+
 
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
@@ -400,6 +411,7 @@ void calibrate(Command cmd) {
       for (uint8_t j=0; j<4; j++) {
         //Serial.println(j<<2, HEX);
         chip_select(j<<2);
+        Serial.println("TM Board " + cs2TM(j<<2));
         calibrate_channel((unsigned char)(channel_id-1), cmd.args[i]);
       }
     }
@@ -436,6 +448,23 @@ void calibrate(Command cmd) {
 
 void measure(Command cmd) {
   Serial.println("Measuring...");
+  byte channel_id = cmd.args[0].toInt();
+  if (channel_id < 1 || channel_id > 8) {
+    Serial.println("ERROR: Invalid channel selected to measure.");
+    return;
+  }
+
+  if (cmd.flag == "") {
+    // measure same channel on all TM boards
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Channel " + String(channel_id) + ": 0x" + String(read_channel(channel_id), HEX));
+    }
+    Serial.println("MEASURE ON ALL TM COMPLETE");
+    return;
+  }
+
+  
 }
 
 void status(Command cmd) {
@@ -499,6 +528,7 @@ void loop() {
 
   String line = Serial.readStringUntil('\n');
 
+  Serial.println("Received command: " + line);
   Command command = parse_command(line);
   
   bool found = false;
