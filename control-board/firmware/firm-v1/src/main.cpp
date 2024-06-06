@@ -186,6 +186,24 @@ void chip_select(unsigned int addr) {
   digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
 }
 
+int board_select(char board) {
+  switch (board){
+    case 'a':
+      chip_select(TM_1_ADC); break;
+    case 'b':
+      chip_select(TM_2_ADC); break;
+    case 'c':
+      chip_select(TM_3_ADC); break;
+    case 'd': 
+      chip_select(TM_4_ADC); break;
+    default:
+      Serial.println("ERROR: Invalid board selected for calibration command.");
+      return -1;
+      break;
+  }
+  return 0;
+}
+
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
 ----------------------------------------------------- */
@@ -342,25 +360,63 @@ void reset(Command cmd) {
   // reset specific TM ADCs based on flag
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
     char board = cmd.flag.charAt(i);
-    switch (board)
-    {
-    case 'a':
-      chip_select(TM_1_ADC); rst(); break;
-    case 'b':
-      chip_select(TM_2_ADC); rst(); break;
-    case 'c':
-      chip_select(TM_3_ADC); rst(); break;
-    case 'd': 
-      chip_select(TM_4_ADC); rst(); break;
-    default:
-      Serial.println("ERROR: Invalid board selected for reset command.");
-      break;
-    }
+    int status = board_select(board);
+    if (status != -1) rst();
   }
 }
 
 void calibrate(Command cmd) {
-  Serial.print("Calibrating...");
+  // Calibrate ALL TM boards
+  if (cmd.flag == "" && cmd.nargs == 0) {
+    // Calibrate all channels on all TM ADCs
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      for (uint8_t j=0; j<8; j++) {
+        calibrate_channel((unsigned char)j, String(j+1));
+      }
+    }
+    Serial.println("COMPLETE CALIBRATION COMPLETE");
+    return;
+  } else if (cmd.flag == ""){
+    // Calibrate specifc channel(s) on all TM ADCs
+    for (uint8_t i=0; i<cmd.nargs; i++) {
+      unsigned char channel_id = hex2char(cmd.args[i]);
+      if (channel_id < 1 || channel_id > 8) {
+        Serial.println("ERROR: Invalid channel selected to calibrate all boards.");
+        return;
+      }
+      for (uint8_t j=0; j<4; j++) {
+        chip_select(j<<2);
+        calibrate_channel(channel_id-1, cmd.args[i]);
+      }
+    }
+    Serial.println("CALIBRATION COMPLETE ON ALL TM BOARDS");
+    return;
+  }
+
+  // Calibrate specifc TM board(s)
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    if (board_select(board) == -1) continue;
+
+    if (cmd.nargs == 0) {
+      // Calibrate all channels on the selected board
+      for (uint8_t j=0; j<8; j++) {
+        calibrate_channel((unsigned char)j, String(j+1));
+      }
+    } else {
+      // Calibrate specific channel(s) on the selected board
+      for (uint8_t j=0; j<cmd.nargs; j++) {
+        unsigned char channel_id = hex2char(cmd.args[j]);
+        if (channel_id < 1 || channel_id > 8) {
+          Serial.println("ERROR: Invalid channel selected for calibration command.");
+          return;
+        }
+        calibrate_channel(channel_id-1, cmd.args[j]);
+      }
+    }
+  }
+  Serial.println("CALIBRATION COMPLETE");
 }
 
 void measure(Command cmd) {
@@ -384,7 +440,6 @@ CommandEntry command_table[] = {
   {"calibrate", calibrate},
   {"measure", measure},
   {"status", status},
-  {NULL, unknown_command}
 };
 
 void setup() {
@@ -441,3 +496,4 @@ void loop() {
   }
   if (!found) unknown_command(command);
 }
+
