@@ -159,8 +159,9 @@ Command parse_command(String line) {
   while(line.length() > 0 && command.nargs < MAX_ARGS) {
     split = line.indexOf(' ');
     if (split < 0) split = line.length();
-    command.args[command.nargs] = line.substring(1, split);
+    command.args[command.nargs] = line.substring(0, split);
     command.args[command.nargs].trim();
+    //Serial.println("Argument "+String(command.nargs) + ": " + command.args[command.nargs].c_str());
     command.nargs++;
     line = line.substring(split);
     line.trim();
@@ -285,6 +286,7 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
   // write_register(REG_MODE, 0b01100011, 8);
 
+/*
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
@@ -302,7 +304,7 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
   }
-
+*/
   Serial.println("Calibration succeeded!");
 }
 
@@ -348,55 +350,67 @@ unsigned long read_channel(unsigned char channel_id) {
   Command Functions
 ----------------------------------------------------- */
 void reset(Command cmd) {
+  Serial.println("Resetting...");
   if (cmd.flag == "") {
     // loop through and reset ALL TM ADCs if no flag was given 
     for (uint8_t i=0; i<4; i++) {
       chip_select(i<<2);
       rst();
     }
+    Serial.println("FULL RESET COMPLETE\n");
     return;
   }
 
   // reset specific TM ADCs based on flag
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
     char board = cmd.flag.charAt(i);
+    Serial.println("Resetting TM Board " + String(board));
     int status = board_select(board);
     if (status != -1) rst();
   }
+  Serial.println("RESET COMPLETE\n");
 }
 
 void calibrate(Command cmd) {
+  Serial.println("Calibrating...");
   // Calibrate ALL TM boards
   if (cmd.flag == "" && cmd.nargs == 0) {
     // Calibrate all channels on all TM ADCs
     for (uint8_t i=0; i<4; i++) {
+      Serial.println("Calibrating TM Board " + String(i+1));
       chip_select(i<<2);
       for (uint8_t j=0; j<8; j++) {
         calibrate_channel((unsigned char)j, String(j+1));
       }
+      Serial.println("\n");
     }
-    Serial.println("COMPLETE CALIBRATION COMPLETE");
+    Serial.println("FULL CALIBRATION COMPLETE\n");
     return;
   } else if (cmd.flag == ""){
+    //Serial.println("found no flag, but found args:" + String(cmd.nargs));
+    //Serial.println("this is the first arg" + cmd.args[0]);
+
     // Calibrate specifc channel(s) on all TM ADCs
     for (uint8_t i=0; i<cmd.nargs; i++) {
-      unsigned char channel_id = hex2char(cmd.args[i]);
+      byte channel_id = cmd.args[i].toInt();
       if (channel_id < 1 || channel_id > 8) {
         Serial.println("ERROR: Invalid channel selected to calibrate all boards.");
         return;
       }
       for (uint8_t j=0; j<4; j++) {
+        //Serial.println(j<<2, HEX);
         chip_select(j<<2);
-        calibrate_channel(channel_id-1, cmd.args[i]);
+        calibrate_channel((unsigned char)(channel_id-1), cmd.args[i]);
       }
     }
-    Serial.println("CALIBRATION COMPLETE ON ALL TM BOARDS");
+    Serial.println("CALIBRATION COMPLETE ON ALL TM BOARDS\n");
     return;
   }
 
   // Calibrate specifc TM board(s)
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
     char board = cmd.flag.charAt(i);
+    Serial.println("Calibrating TM Board " + String(board));
     if (board_select(board) == -1) continue;
 
     if (cmd.nargs == 0) {
@@ -407,16 +421,17 @@ void calibrate(Command cmd) {
     } else {
       // Calibrate specific channel(s) on the selected board
       for (uint8_t j=0; j<cmd.nargs; j++) {
-        unsigned char channel_id = hex2char(cmd.args[j]);
+        byte channel_id = cmd.args[j].toInt();
         if (channel_id < 1 || channel_id > 8) {
           Serial.println("ERROR: Invalid channel selected for calibration command.");
           return;
         }
-        calibrate_channel(channel_id-1, cmd.args[j]);
+        calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
       }
     }
+    Serial.println("\n");
   }
-  Serial.println("CALIBRATION COMPLETE");
+  Serial.println("CALIBRATION COMPLETE\n");
 }
 
 void measure(Command cmd) {
