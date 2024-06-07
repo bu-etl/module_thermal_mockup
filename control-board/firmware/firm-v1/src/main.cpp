@@ -198,7 +198,7 @@ int board_select(char board) {
     case 'd': 
       chip_select(TM_4_ADC); break;
     default:
-      Serial.println("ERROR: Invalid board selected for calibration command.");
+      Serial.println("ERROR: Invalid board selected");
       return -1;
       break;
   }
@@ -423,6 +423,8 @@ void calibrate(Command cmd) {
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
     char board = cmd.flag.charAt(i);
     Serial.println("Calibrating TM Board " + String(board));
+
+    // skip itteration if invalid board
     if (board_select(board) == -1) continue;
 
     if (cmd.nargs == 0) {
@@ -448,33 +450,401 @@ void calibrate(Command cmd) {
 
 void measure(Command cmd) {
   Serial.println("Measuring...");
-  byte channel_id = cmd.args[0].toInt();
-  if (channel_id < 1 || channel_id > 8) {
-    Serial.println("ERROR: Invalid channel selected to measure.");
+  if (cmd.nargs == 0) {
+    Serial.println("ERROR: No channel selected for measurement.");
     return;
   }
 
-  if (cmd.flag == "") {
-    // measure same channel on all TM boards
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Channel " + String(channel_id) + ": 0x" + String(read_channel(channel_id), HEX));
+  // Measure specified channels on all TM boards
+  if (cmd.flag == ""){
+    for (uint8_t i=0; i<cmd.nargs; i++) {
+      byte channel_id = cmd.args[0].toInt();
+
+      //skip itteration if invalid channel
+      if (channel_id < 1 || channel_id > 8) {
+        Serial.println("ERROR: Invalid channel selected to measure.");
+        continue;
+      }
+
+      //measure channel on all TM boards
+      for (uint8_t j=0; j<4; j++) {
+        chip_select(j<<2);
+        unsigned long adc_value = read_channel(cmd.args[i].toInt());
+        Serial.println("TM Board " + String(cs2TM(j<<2)) + " Channel " + String(channel_id) + ": 0x" + String(read_channel(channel_id), HEX));
+      }
     }
     Serial.println("MEASURE ON ALL TM COMPLETE");
     return;
   }
 
-  
+  // Measure specified channels on specified TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    //pick the TM board
+    char board = cmd.flag.charAt(i);
+    Serial.println("Measuring TM Board " + String(board));
+
+    //skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    for (uint8_t j=0; j<cmd.nargs; j++) {
+      //measure specified channels
+      byte channel_id = cmd.args[0].toInt();
+
+      //skip itteration if invalid channel
+      if (channel_id < 1 || channel_id > 8) { 
+        Serial.println("ERROR: Invalid channel selected to measure.");
+        continue;
+      }
+
+      unsigned long adc_value = read_channel(cmd.args[j].toInt());
+      Serial.println("TM Board " + String(board) + " Channel " + cmd.args[j] + ": 0x" + String(adc_value, HEX));
+    }
+  }
+  Serial.println("MEASURE COMPLETE");
 }
 
 void status(Command cmd) {
   Serial.println("Status...");
+
+  // Get status of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long status = read_register(REG_STATUS, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Status: 0x" + String(status, HEX));
+    }
+    Serial.println("STATUS ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Get status of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Status of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long status = read_register(REG_STATUS, 8);
+    Serial.println("TM Board " + String(board) + " Status: 0x" + String(status, HEX));
+  }
+  Serial.println("STATUS COMPLETE\n");
 }
 
-void unknown_command(Command cmd) {
-  Serial.println("ERROR: Unknown command");
+void mode(Command cmd){
+  Serial.println("Mode...");
+
+  // Read mode register
+  if (cmd.nargs > 0) {
+    // Set mode of all TM boards
+    if (cmd.flag == "") {
+      for (uint8_t i=0; i<4; i++) {
+        chip_select(i<<2);
+        write_register(REG_MODE, hex2char(cmd.args[0]), 8);
+      }
+      return;
+    } else {
+      // Set mode of specific TM boards
+      for (uint8_t i=0; i<cmd.flag.length(); i++) {
+        char board = cmd.flag.charAt(i);
+        Serial.println("Setting mode of TM Board " + String(board));
+        // skip itteration if invalid board
+        if (board_select(board) == -1) continue;
+        write_register(REG_MODE, hex2char(cmd.args[0]), 8);
+      }
+    }
+  }
+
+  // Read mode of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_STATUS, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Mode: 0x" + String(value, HEX));
+    }
+    Serial.println("MODE ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read mode of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_STATUS, 8);
+    Serial.println("TM Board " + String(board) + " Mode: 0x" + String(value, HEX));
+  }
+  Serial.println("MODE COMPLETE\n");
 }
 
+void control(Command cmd){
+  Serial.println("Control...");
+
+  if (cmd.nargs > 0) {
+    // Set control of all TM boards
+    if (cmd.flag == "") {
+      for (uint8_t i=0; i<4; i++) {
+        chip_select(i<<2);
+        write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
+      }
+      return;
+    } else {
+      // Set control of specific TM boards
+      for (uint8_t i=0; i<cmd.flag.length(); i++) {
+        char board = cmd.flag.charAt(i);
+        Serial.println("Setting control of TM Board " + String(board));
+        // skip itteration if invalid board
+        if (board_select(board) == -1) continue;
+        write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
+      }
+    }
+  }
+
+  // Read control of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_ADC_CONTROL, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Control: 0x" + String(value, HEX));
+    }
+    Serial.println("CONTROL ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read control of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_ADC_CONTROL, 8);
+    Serial.println("TM Board " + String(board) + " Control: 0x" + String(value, HEX));
+  }
+}
+
+void io_control(Command cmd){
+  Serial.println("IO Control...");
+
+  if (cmd.nargs > 0) {
+    // Set IO Control of all TM boards
+    if (cmd.flag == "") {
+      for (uint8_t i=0; i<4; i++) {
+        chip_select(i<<2);
+        write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
+      }
+      return;
+    } else {
+      // Set IO Control of specific TM boards
+      for (uint8_t i=0; i<cmd.flag.length(); i++) {
+        char board = cmd.flag.charAt(i);
+        Serial.println("Setting IO Control of TM Board " + String(board));
+        // skip itteration if invalid board
+        if (board_select(board) == -1) continue;
+        write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
+      }
+    }
+  }
+
+  // Read IO Control of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_IO_CONTROL, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " IO Control: 0x" + String(value, HEX));
+    }
+    Serial.println("IO CONTROL ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read IO Control of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_IO_CONTROL, 8);
+    Serial.println("TM Board " + String(board) + " IO Control: 0x" + String(value, HEX));
+  }
+}
+
+void filter(Command cmd){
+  Serial.println("Filter...");
+
+  if (cmd.nargs > 0) {
+    // Set filter of all TM boards
+    if (cmd.flag == "") {
+      for (uint8_t i=0; i<4; i++) {
+        chip_select(i<<2);
+        write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
+      }
+      return;
+    } else {
+      // Set filter of specific TM boards
+      for (uint8_t i=0; i<cmd.flag.length(); i++) {
+        char board = cmd.flag.charAt(i);
+        Serial.println("Setting filter of TM Board " + String(board));
+        // skip itteration if invalid board
+        if (board_select(board) == -1) continue;
+        write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
+      }
+    }
+  }
+  // Read filter of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_FILTER, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Filter: 0x" + String(value, HEX));
+    }
+    Serial.println("FILTER ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read filter of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Filter of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_FILTER, 8);
+    Serial.println("TM Board " + String(board) + " Filter: 0x" + String(value, HEX));
+  }
+  Serial.println("FILTER COMPLETE\n");
+}
+
+void id(Command cmd){
+  Serial.println("ID...");
+  if (cmd.nargs > 0){
+    // Set ID of all TM boards
+    if (cmd.flag == "") {
+      for (uint8_t i=0; i<4; i++) {
+        chip_select(i<<2);
+        write_register(REG_ID, hex2char(cmd.args[0]), 8);
+      }
+      return;
+    } else {
+      // Set ID of specific TM boards
+      for (uint8_t i=0; i<cmd.flag.length(); i++) {
+        char board = cmd.flag.charAt(i);
+        Serial.println("Setting ID of TM Board " + String(board));
+        // skip itteration if invalid board
+        if (board_select(board) == -1) continue;
+        write_register(REG_ID, hex2char(cmd.args[0]), 8);
+      }
+    }
+  }
+
+  // Read ID of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_ID, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " ID: 0x" + String(value, HEX));
+    }
+    Serial.println("ID ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read ID of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("ID of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_ID, 8);
+    Serial.println("TM Board " + String(board) + " ID: 0x" + String(value, HEX));
+  }
+  Serial.println("ID COMPLETE\n");
+}
+
+void data(Command cmd){
+  Serial.println("Data...");
+
+  // Read data of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Data: 0x" + String(value, HEX));
+    }
+    Serial.println("DATA ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read data of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Data of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
+    Serial.println("TM Board " + String(board) + " Data: 0x" + String(value, HEX));
+  }
+  Serial.println("DATA COMPLETE\n");
+}
+
+void gain(Command cmd){
+  Serial.println("Gain...");
+
+  // Read gain of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_ADC_GAIN, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Gain: 0x" + String(value, HEX));
+    }
+    Serial.println("GAIN ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read gain of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Gain of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_ADC_GAIN, 8);
+    Serial.println("TM Board " + String(board) + " Gain: 0x" + String(value, HEX));
+  }
+  Serial.println("GAIN COMPLETE\n");
+}
+
+void offset(Command cmd){
+  Serial.println("Offset...");
+
+  // Read offset of all TM boards
+  if (cmd.flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(REG_ADC_OFFSET, 8);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Offset: 0x" + String(value, HEX));
+    }
+    Serial.println("OFFSET ON ALL TM COMPLETE\n");
+    return;
+  }
+
+  // Read offset of specific TM boards
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Offset of TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    unsigned long value = read_register(REG_ADC_OFFSET, 8);
+    Serial.println("TM Board " + String(board) + " Offset: 0x" + String(value, HEX));
+  }
+  Serial.println("OFFSET COMPLETE\n");
+}
 
 /* ----------------------------------------------------- 
   Setup 
@@ -484,6 +854,14 @@ CommandEntry command_table[] = {
   {"calibrate", calibrate},
   {"measure", measure},
   {"status", status},
+  {"mode", mode},
+  {"control", control},
+  {"io_control", io_control},
+  {"data", data},
+  {"gain", gain},
+  {"offset", offset},
+  {"filter", filter},
+  {"id", id},
 };
 
 void setup() {
@@ -539,6 +917,6 @@ void loop() {
       break;
     }
   }
-  if (!found) unknown_command(command);
+  if (!found) Serial.println("ERROR: Unknown command");
 }
 
