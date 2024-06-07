@@ -187,34 +187,6 @@ void chip_select(unsigned int addr) {
   digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
 }
 
-int board_select(char board) {
-  switch (board){
-    case 'a':
-      chip_select(TM_1_ADC); break;
-    case 'b':
-      chip_select(TM_2_ADC); break;
-    case 'c':
-      chip_select(TM_3_ADC); break;
-    case 'd': 
-      chip_select(TM_4_ADC); break;
-    default:
-      Serial.println("ERROR: Invalid board selected");
-      return -1;
-      break;
-  }
-  return 0;
-}
-
-char cs2TM(int i) {
-  switch (i) {
-    case 0x0 ... 0x3: return 'a';
-    case 0x4 ... 0x7: return 'b';
-    case 0x8 ... 0xB: return 'c';
-    case 0xC ... 0xF: return 'd';
-    default: return -1;
-  }
-}
-
 
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
@@ -358,6 +330,74 @@ unsigned long read_channel(unsigned char channel_id) {
 
 
 /* ----------------------------------------------------- 
+  Multi-Board Helper Functions
+----------------------------------------------------- */
+int board_select(char board) {
+  switch (board){
+    case 'a':
+      chip_select(TM_1_ADC); break;
+    case 'b':
+      chip_select(TM_2_ADC); break;
+    case 'c':
+      chip_select(TM_3_ADC); break;
+    case 'd': 
+      chip_select(TM_4_ADC); break;
+    default:
+      Serial.println("ERROR: Invalid board selected");
+      return -1;
+      break;
+  }
+  return 0;
+}
+
+char cs2TM(int i) {
+  switch (i) {
+    case 0x0 ... 0x3: return 'a';
+    case 0x4 ... 0x7: return 'b';
+    case 0x8 ... 0xB: return 'c';
+    case 0xC ... 0xF: return 'd';
+    default: return -1;
+  }
+}
+
+void multi_read(String flag, String name, unsigned char addr, unsigned int size){
+  if (flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      unsigned long value = read_register(addr, size);
+      Serial.println("TM Board " + String(cs2TM(i<<2)) + " " + name + ": 0x" + String(value, HEX));
+    }
+    return;
+  }
+
+  for (uint8_t i=0; i<flag.length(); i++) {
+    char board = flag.charAt(i);
+    Serial.println("Reading TM Board " + String(board));
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+    unsigned long value = read_register(addr, size);
+    Serial.println("TM Board " + String(board) + " " + name + ": 0x" + String(value, HEX));
+  }
+}
+
+void multi_write(String flag, String name, unsigned char addr, unsigned long value, unsigned int size){
+  if (flag == "") {
+    for (uint8_t i=0; i<4; i++) {
+      chip_select(i<<2);
+      write_register(addr, value, size);
+    }
+    return;
+  }
+
+  for (uint8_t i=0; i<flag.length(); i++) {
+    char board = flag.charAt(i);
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+    write_register(addr, value, size);
+  }
+}
+
+/* ----------------------------------------------------- 
   Command Functions
 ----------------------------------------------------- */
 void reset(Command cmd) {
@@ -469,7 +509,6 @@ void measure(Command cmd) {
       //measure channel on all TM boards
       for (uint8_t j=0; j<4; j++) {
         chip_select(j<<2);
-        unsigned long adc_value = read_channel(cmd.args[i].toInt());
         Serial.println("TM Board " + String(cs2TM(j<<2)) + " Channel " + String(channel_id) + ": 0x" + String(read_channel(channel_id), HEX));
       }
     }
@@ -496,8 +535,7 @@ void measure(Command cmd) {
         continue;
       }
 
-      unsigned long adc_value = read_channel(cmd.args[j].toInt());
-      Serial.println("TM Board " + String(board) + " Channel " + cmd.args[j] + ": 0x" + String(adc_value, HEX));
+      Serial.println("TM Board " + String(board) + " Channel " + cmd.args[j] + ": 0x" + String(read_channel(channel_id), HEX));
     }
   }
   Serial.println("MEASURE COMPLETE");
@@ -505,346 +543,67 @@ void measure(Command cmd) {
 
 void status(Command cmd) {
   Serial.println("Status...");
-
-  // Get status of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long status = read_register(REG_STATUS, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Status: 0x" + String(status, HEX));
-    }
-    Serial.println("STATUS ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Get status of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("Status of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long status = read_register(REG_STATUS, 8);
-    Serial.println("TM Board " + String(board) + " Status: 0x" + String(status, HEX));
-  }
+  multi_read(cmd.flag, "Status", REG_STATUS, 8);
   Serial.println("STATUS COMPLETE\n");
+}
+
+void offset(Command cmd) {
+  Serial.println("Offset...");
+  multi_read(cmd.flag, "Offset", REG_ADC_OFFSET, 24);
+  Serial.println("OFFSET COMPLETE\n");
+}
+
+void gain(Command cmd) {
+  Serial.println("Gain...");
+  multi_read(cmd.flag, "Gain", REG_ADC_GAIN, 24);
+  Serial.println("GAIN COMPLETE\n");
 }
 
 void mode(Command cmd){
   Serial.println("Mode...");
-
+  // Write mode register
+  if (cmd.nargs > 0) multi_write(cmd.flag, "Mode", REG_MODE, hex2char(cmd.args[0]), 8);
   // Read mode register
-  if (cmd.nargs > 0) {
-    // Set mode of all TM boards
-    if (cmd.flag == "") {
-      for (uint8_t i=0; i<4; i++) {
-        chip_select(i<<2);
-        write_register(REG_MODE, hex2char(cmd.args[0]), 8);
-      }
-      return;
-    } else {
-      // Set mode of specific TM boards
-      for (uint8_t i=0; i<cmd.flag.length(); i++) {
-        char board = cmd.flag.charAt(i);
-        Serial.println("Setting mode of TM Board " + String(board));
-        // skip itteration if invalid board
-        if (board_select(board) == -1) continue;
-        write_register(REG_MODE, hex2char(cmd.args[0]), 8);
-      }
-    }
-  }
-
-  // Read mode of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_STATUS, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Mode: 0x" + String(value, HEX));
-    }
-    Serial.println("MODE ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read mode of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_STATUS, 8);
-    Serial.println("TM Board " + String(board) + " Mode: 0x" + String(value, HEX));
-  }
+  multi_read(cmd.flag, "Mode", REG_MODE, 8);
   Serial.println("MODE COMPLETE\n");
 }
 
 void control(Command cmd){
   Serial.println("Control...");
-
-  if (cmd.nargs > 0) {
-    // Set control of all TM boards
-    if (cmd.flag == "") {
-      for (uint8_t i=0; i<4; i++) {
-        chip_select(i<<2);
-        write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
-      }
-      return;
-    } else {
-      // Set control of specific TM boards
-      for (uint8_t i=0; i<cmd.flag.length(); i++) {
-        char board = cmd.flag.charAt(i);
-        Serial.println("Setting control of TM Board " + String(board));
-        // skip itteration if invalid board
-        if (board_select(board) == -1) continue;
-        write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
-      }
-    }
-  }
-
-  // Read control of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_ADC_CONTROL, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Control: 0x" + String(value, HEX));
-    }
-    Serial.println("CONTROL ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read control of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_ADC_CONTROL, 8);
-    Serial.println("TM Board " + String(board) + " Control: 0x" + String(value, HEX));
-  }
+  // Write ADC Control register
+  if (cmd.nargs > 0) multi_write(cmd.flag, "Control", REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
+  // Read ADC Control register
+  multi_read(cmd.flag, "Control", REG_ADC_CONTROL, 8);
+  Serial.println("CONTROL COMPLETE\n");
 }
 
 void io_control(Command cmd){
   Serial.println("IO Control...");
-
-  if (cmd.nargs > 0) {
-    // Set IO Control of all TM boards
-    if (cmd.flag == "") {
-      for (uint8_t i=0; i<4; i++) {
-        chip_select(i<<2);
-        write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
-      }
-      return;
-    } else {
-      // Set IO Control of specific TM boards
-      for (uint8_t i=0; i<cmd.flag.length(); i++) {
-        char board = cmd.flag.charAt(i);
-        Serial.println("Setting IO Control of TM Board " + String(board));
-        // skip itteration if invalid board
-        if (board_select(board) == -1) continue;
-        write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
-      }
-    }
-  }
-
-  // Read IO Control of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_IO_CONTROL, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " IO Control: 0x" + String(value, HEX));
-    }
-    Serial.println("IO CONTROL ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read IO Control of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_IO_CONTROL, 8);
-    Serial.println("TM Board " + String(board) + " IO Control: 0x" + String(value, HEX));
-  }
+  // Write IO Control register
+  if (cmd.nargs > 0) multi_write(cmd.flag, "IO Control", REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
+  // Read IO Control register
+  multi_read(cmd.flag, "IO Control", REG_IO_CONTROL, 8);
+  Serial.println("IO CONTROL COMPLETE\n");
 }
 
-void filter(Command cmd){
+void filter(Command cmd) {
   Serial.println("Filter...");
-
-  if (cmd.nargs > 0) {
-    // Set filter of all TM boards
-    if (cmd.flag == "") {
-      for (uint8_t i=0; i<4; i++) {
-        chip_select(i<<2);
-        write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
-      }
-      return;
-    } else {
-      // Set filter of specific TM boards
-      for (uint8_t i=0; i<cmd.flag.length(); i++) {
-        char board = cmd.flag.charAt(i);
-        Serial.println("Setting filter of TM Board " + String(board));
-        // skip itteration if invalid board
-        if (board_select(board) == -1) continue;
-        write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
-      }
-    }
-  }
-  // Read filter of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_FILTER, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Filter: 0x" + String(value, HEX));
-    }
-    Serial.println("FILTER ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read filter of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("Filter of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_FILTER, 8);
-    Serial.println("TM Board " + String(board) + " Filter: 0x" + String(value, HEX));
-  }
+  // Write Filter register
+  if (cmd.nargs > 0) multi_write(cmd.flag, "Filter", REG_FILTER, hex2char(cmd.args[0]), 8);
+  // Read Filter register
+  multi_read(cmd.flag, "Filter", REG_FILTER, 8);
   Serial.println("FILTER COMPLETE\n");
 }
 
 void id(Command cmd){
   Serial.println("ID...");
-  if (cmd.nargs > 0){
-    // Set ID of all TM boards
-    if (cmd.flag == "") {
-      for (uint8_t i=0; i<4; i++) {
-        chip_select(i<<2);
-        write_register(REG_ID, hex2char(cmd.args[0]), 8);
-      }
-      return;
-    } else {
-      // Set ID of specific TM boards
-      for (uint8_t i=0; i<cmd.flag.length(); i++) {
-        char board = cmd.flag.charAt(i);
-        Serial.println("Setting ID of TM Board " + String(board));
-        // skip itteration if invalid board
-        if (board_select(board) == -1) continue;
-        write_register(REG_ID, hex2char(cmd.args[0]), 8);
-      }
-    }
-  }
-
-  // Read ID of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_ID, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " ID: 0x" + String(value, HEX));
-    }
-    Serial.println("ID ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read ID of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("ID of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_ID, 8);
-    Serial.println("TM Board " + String(board) + " ID: 0x" + String(value, HEX));
-  }
+  // Write ID register
+  if (cmd.nargs > 0) multi_write(cmd.flag, "ID", REG_ID, hex2char(cmd.args[0]), 8);
+  // Read ID register
+  multi_read(cmd.flag, "ID", REG_ID, 8);
   Serial.println("ID COMPLETE\n");
 }
 
-void data(Command cmd){
-  Serial.println("Data...");
-
-  // Read data of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Data: 0x" + String(value, HEX));
-    }
-    Serial.println("DATA ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read data of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("Data of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
-    Serial.println("TM Board " + String(board) + " Data: 0x" + String(value, HEX));
-  }
-  Serial.println("DATA COMPLETE\n");
-}
-
-void gain(Command cmd){
-  Serial.println("Gain...");
-
-  // Read gain of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_ADC_GAIN, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Gain: 0x" + String(value, HEX));
-    }
-    Serial.println("GAIN ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read gain of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("Gain of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_ADC_GAIN, 8);
-    Serial.println("TM Board " + String(board) + " Gain: 0x" + String(value, HEX));
-  }
-  Serial.println("GAIN COMPLETE\n");
-}
-
-void offset(Command cmd){
-  Serial.println("Offset...");
-
-  // Read offset of all TM boards
-  if (cmd.flag == "") {
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      unsigned long value = read_register(REG_ADC_OFFSET, 8);
-      Serial.println("TM Board " + String(cs2TM(i<<2)) + " Offset: 0x" + String(value, HEX));
-    }
-    Serial.println("OFFSET ON ALL TM COMPLETE\n");
-    return;
-  }
-
-  // Read offset of specific TM boards
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("Offset of TM Board " + String(board));
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    unsigned long value = read_register(REG_ADC_OFFSET, 8);
-    Serial.println("TM Board " + String(board) + " Offset: 0x" + String(value, HEX));
-  }
-  Serial.println("OFFSET COMPLETE\n");
-}
 
 /* ----------------------------------------------------- 
   Setup 
@@ -857,7 +616,6 @@ CommandEntry command_table[] = {
   {"mode", mode},
   {"control", control},
   {"io_control", io_control},
-  {"data", data},
   {"gain", gain},
   {"offset", offset},
   {"filter", filter},
