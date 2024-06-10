@@ -621,6 +621,96 @@ void temp_probe(Command cmd){
   Serial.println("TEMP PROBE READ COMPLETE\n");
 }
 
+void heater_ON(Command cmd){
+  if (cmd.nargs == 0) {
+    cmd.nargs = 4;
+    cmd.args[0] = "1";
+    cmd.args[1] = "2";
+    cmd.args[2] = "3";
+    cmd.args[3] = "4";
+  }
+
+  if (cmd.flag == "") cmd.flag = "abcd";
+
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("TM Board " + String(board) + " Selecting Heaters");
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    for (uint8_t j=0; j<cmd.nargs; j++) {
+      int heater = cmd.args[j].toInt();
+      if (heater < 1 || heater > 4) {
+        Serial.println("ERROR: Invalid heater selected.");
+        continue;
+      }
+      switch (heater) {
+        case 1:
+          digitalWrite(PIN_HEATER_1, HIGH);
+          break;
+        case 2:
+          digitalWrite(PIN_HEATER_2, HIGH);
+          break;
+        case 3:
+          digitalWrite(PIN_HEATER_3, HIGH);
+          break;
+        case 4:
+          digitalWrite(PIN_HEATER_4, HIGH);
+          break;
+      }
+      Serial.println("Heater " + String(heater) + " ON");
+    }
+    Serial.println("\n");
+  }
+  Serial.println("Heater Toggle ON Complete\n");
+}
+
+void heater_OFF(Command cmd){
+  if (cmd.nargs == 0) {
+    cmd.nargs = 4;
+    cmd.args[0] = "1";
+    cmd.args[1] = "2";
+    cmd.args[2] = "3";
+    cmd.args[3] = "4";
+  }
+
+  if (cmd.flag == "") cmd.flag = "abcd";
+
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("TM Board " + String(board) + " selecting Heaters");
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    for (uint8_t j=0; j<cmd.nargs; j++) {
+      int heater = cmd.args[j].toInt();
+      if (heater < 1 || heater > 4) {
+        Serial.println("ERROR: Invalid heater selected.");
+        continue;
+      }
+      switch (heater) {
+        case 1:
+          digitalWrite(PIN_HEATER_1, LOW);
+          break;
+        case 2:
+          digitalWrite(PIN_HEATER_2, LOW);
+          break;
+        case 3:
+          digitalWrite(PIN_HEATER_3, LOW);
+          break;
+        case 4:
+          digitalWrite(PIN_HEATER_4, LOW);
+          break;
+      }
+      Serial.println("Heater " + String(heater) + " OFF");
+    }
+    Serial.println("\n");
+  }
+  Serial.println("Heater Toggle OFF Complete\n");
+}
+
 
 /* ----------------------------------------------------- 
   Setup 
@@ -638,6 +728,8 @@ CommandEntry command_table[] = {
   {"filter", filter},
   {"id", id},
   {"probe", temp_probe},
+  {"heaterON", heater_ON},
+  {"heaterOFF", heater_OFF},
 };
 
 void setup() {
@@ -673,6 +765,7 @@ void setup() {
 
   Serial.begin(9600);
 }
+
 
 /* ----------------------------------------------------- 
   Main Logic Loop 
