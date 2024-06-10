@@ -80,28 +80,18 @@
 
 // TM Chip Select Addresses
 #define TM_1_ADC 0x0
-#define TM_1_PROBE_1 0x1
-#define TM_1_PROBE_2 0x2
-#define TM_1_PROBE_3 0x3
 #define TM_2_ADC 0x4
-#define TM_2_PROBE_1 0x5
-#define TM_2_PROBE_2 0x6
-#define TM_2_PROBE_3 0x7
 #define TM_3_ADC 0x8
-#define TM_3_PROBE_1 0x9
-#define TM_3_PROBE_2 0xA
-#define TM_3_PROBE_3 0xB
 #define TM_4_ADC 0xC
-#define TM_4_PROBE_1 0xD
-#define TM_4_PROBE_2 0xE
-#define TM_4_PROBE_3 0xF
+
+const String allTM = "abcd";
 
 /* ----------------------------------------------------- 
   Parsing Functions
 ----------------------------------------------------- */
 unsigned char hex2char(String s) {
   if (s.length() < 2) {
-    Serial.println("ERROR: Bad Hex conversion, must be two characters.");
+    Serial.println(F("ERROR: Bad Hex conversion, must be two characters."));
     return 0;
   }
   unsigned char out = 0;
@@ -180,7 +170,7 @@ void clk() {
   digitalWrite(PIN_CLK, LOW);
 }
 
-void chip_select(unsigned int addr) {
+void chip_select(byte addr) {
   digitalWrite(PIN_SEL_0, 0x1 & addr);
   digitalWrite(PIN_SEL_1, 0x1 & (addr>>1));
   digitalWrite(PIN_SEL_2, 0x1 & (addr>>2));
@@ -192,7 +182,7 @@ void chip_select(unsigned int addr) {
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
 ----------------------------------------------------- */
-void write_register(unsigned char addr, unsigned long value, unsigned int size_bits) {
+void write_register(unsigned char addr, unsigned long value, byte size_bits) {
   
   digitalWrite(PIN_DIN, LOW);  // WENB
   clk();
@@ -224,7 +214,7 @@ void write_register(unsigned char addr, unsigned long value, unsigned int size_b
   delay(10);
 }
 
-unsigned long read_register(unsigned char addr, unsigned int size_bits) {
+unsigned long read_register(unsigned char addr, byte size_bits) {
   
   digitalWrite(PIN_DIN, LOW);  // WENB
   clk();
@@ -289,7 +279,7 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
     delay(10);
   }
 */
-  Serial.println("Calibration succeeded!");
+  Serial.println(F("Calibration succeeded!"));
 }
 
 unsigned long read_channel(unsigned char channel_id) {
@@ -304,7 +294,7 @@ unsigned long read_channel(unsigned char channel_id) {
   } else if (channel_id == 9) {
     adc_channel = 0xE;  // AIN9 (as REFIN2+/AIN9)
   } else {
-    Serial.println("ERROR: Unable to read ADC value, invalid channel ID.");
+    Serial.println(F("ERROR: Unable to read ADC value, invalid channel ID."));
     return 0;
   }
   write_register(REG_ADC_CONTROL, (adc_channel << 4) | ADC_CONTROL_RANGE_2p56V, 8);
@@ -318,7 +308,7 @@ unsigned long read_channel(unsigned char channel_id) {
     if (status_value & STATUS_RDY) break;
     try_count++;
     if (try_count > 1000) {
-      Serial.println("ERROR: Unable to read ADC value, timeout.");
+      Serial.println(F("ERROR: Unable to read ADC value, timeout."));
       return 0;
    }
   }
@@ -344,14 +334,14 @@ int board_select(char board) {
     case 'd': 
       chip_select(TM_4_ADC); break;
     default:
-      Serial.println("ERROR: Invalid board selected");
+      Serial.println(F("ERROR: Invalid board selected"));
       return -1;
       break;
   }
   return 0;
 }
 
-int probe_select(int i) {
+int probe_select(byte i) {
   switch (i){
     case 1:
       digitalWrite(PIN_SEL_0, HIGH);
@@ -366,7 +356,7 @@ int probe_select(int i) {
       digitalWrite(PIN_SEL_1, HIGH);
       break;
     default:
-      Serial.println("ERROR: Invalid probe selected");
+      Serial.println(F("ERROR: Invalid probe selected"));
       return -1;
       break;
   }
@@ -374,7 +364,7 @@ int probe_select(int i) {
   return 0;
 }
 
-char cs2TM(int i) {
+char cs2TM(byte i) {
   switch (i) {
     case 0x0 ... 0x3: return 'a';
     case 0x4 ... 0x7: return 'b';
@@ -384,7 +374,7 @@ char cs2TM(int i) {
   }
 }
 
-void multi_read(String flag, String name, unsigned char addr, unsigned int size){
+void multi_read(String flag, String name, unsigned char addr, byte size){
   if (flag == "") {
     for (uint8_t i=0; i<4; i++) {
       chip_select(i<<2);
@@ -404,7 +394,7 @@ void multi_read(String flag, String name, unsigned char addr, unsigned int size)
   }
 }
 
-void multi_write(String flag, String name, unsigned char addr, unsigned long value, unsigned int size){
+void multi_write(String flag, String name, unsigned char addr, unsigned long value, byte size){
   if (flag == "") {
     for (uint8_t i=0; i<4; i++) {
       chip_select(i<<2);
@@ -421,17 +411,72 @@ void multi_write(String flag, String name, unsigned char addr, unsigned long val
   }
 }
 
+void switch_heater(Command cmd, byte state){
+  String state_str = state ? "ON" : "OFF";
+
+  if (cmd.nargs == 0) {
+    cmd.nargs = 4;
+    cmd.args[0] = "1";
+    cmd.args[1] = "2";
+    cmd.args[2] = "3";
+    cmd.args[3] = "4";
+  }
+
+  if (cmd.flag == "") cmd.flag = allTM;
+
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("TM Board " + String(board) + " Selecting Heaters");
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    for (uint8_t j=0; j<cmd.nargs; j++) {
+      uint8_t heater = cmd.args[j].toInt();
+      if (heater < 1 || heater > 4) {
+        Serial.println(F("ERROR: Invalid heater selected."));
+        continue;
+      }
+      switch (heater) {
+        case 1:
+          digitalWrite(PIN_HEATER_1, state);
+          break;
+        case 2:
+          digitalWrite(PIN_HEATER_2, state);
+          break;
+        case 3:
+          digitalWrite(PIN_HEATER_3, state);
+          break;
+        case 4:
+          digitalWrite(PIN_HEATER_4, state);
+          break;
+      }
+      Serial.println("Heater " + String(heater) + " " + state_str);
+    }
+    Serial.println("\n");
+  }
+  Serial.println("Heater Toggle " + state_str + " Complete\n");
+}
+
+void removeArg(Command cmd, uint8_t index) {
+  for (uint8_t i = index; i < cmd.nargs - 1; i++) {
+    cmd.args[i] = cmd.args[i + 1];
+  }
+  cmd.nargs--;
+}
+
+
 /* ----------------------------------------------------- 
   Command Functions
 ----------------------------------------------------- */
 void reset(Command cmd) {
-  Serial.println("Resetting...");
+  Serial.println(F("Resetting..."));
 
   digitalWrite(PIN_ENABLE_B, HIGH);
   delayMicroseconds(100);
   digitalWrite(PIN_ENABLE_B, LOW);
 
-  if (cmd.flag == "") cmd.flag = "abcd";
+  if (cmd.flag == "") cmd.flag = allTM;
 
   // reset specific TM ADCs based on flag
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
@@ -440,13 +485,13 @@ void reset(Command cmd) {
     int status = board_select(board);
     if (status != -1) rst();
   }
-  Serial.println("RESET COMPLETE\n");
+  Serial.println(F("RESET COMPLETE\n"));
 }
 
 void calibrate(Command cmd) {
-  Serial.println("Calibrating...");
+  Serial.println(F("Calibrating..."));
   
-  if (cmd.flag == "") cmd.flag = "abcd";
+  if (cmd.flag == "") cmd.flag = allTM;
 
   // Calibrate specifc TM board(s)
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
@@ -466,7 +511,7 @@ void calibrate(Command cmd) {
       for (uint8_t j=0; j<cmd.nargs; j++) {
         byte channel_id = cmd.args[j].toInt();
         if (channel_id < 1 || channel_id > 8) {
-          Serial.println("ERROR: Invalid channel selected for calibration command.");
+          Serial.println(F("ERROR: Invalid channel selected for calibration command."));
           continue;
         }
         calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
@@ -474,19 +519,19 @@ void calibrate(Command cmd) {
     }
     Serial.println("\n");
   }
-  Serial.println("CALIBRATION COMPLETE\n");
+  Serial.println(F("CALIBRATION COMPLETE\n"));
 }
 
 void measure(Command cmd) {
-  Serial.println("Measuring...");
+  Serial.println(F("Measuring..."));
   if (cmd.nargs == 0) {
-    Serial.println("ERROR: No channel selected for measurement.");
+    Serial.println(F("ERROR: No channel selected for measurement."));
     return;
   }
 
   // Measure specified channels on all TM boards
   if (cmd.flag == ""){
-    cmd.flag = "abcd";
+    cmd.flag = allTM;
   }
 
   // Measure specified channels on specified TM boards
@@ -504,7 +549,7 @@ void measure(Command cmd) {
 
       //skip itteration if invalid channel
       if (channel_id < 1 || channel_id > 8) { 
-        Serial.println("ERROR: Invalid channel selected to measure.");
+        Serial.println(F("ERROR: Invalid channel selected to measure."));
         continue;
       }
 
@@ -512,76 +557,76 @@ void measure(Command cmd) {
     }
     Serial.println("\n");
   }
-  Serial.println("MEASURE COMPLETE\n");
+  Serial.println(F("MEASURE COMPLETE\n"));
 }
 
 void status(Command cmd) {
-  Serial.println("Status...");
+  //Serial.println("Status...");
   multi_read(cmd.flag, "Status", REG_STATUS, 8);
   Serial.println("STATUS COMPLETE\n");
 }
 
 void offset(Command cmd) {
-  Serial.println("Offset...");
+  //Serial.println("Offset...");
   multi_read(cmd.flag, "Offset", REG_ADC_OFFSET, 24);
-  Serial.println("OFFSET COMPLETE\n");
+  Serial.println(F("OFFSET COMPLETE\n"));
 }
 
 void gain(Command cmd) {
-  Serial.println("Gain...");
+  //Serial.println("Gain...");
   multi_read(cmd.flag, "Gain", REG_ADC_GAIN, 24);
-  Serial.println("GAIN COMPLETE\n");
+  Serial.println(F("GAIN COMPLETE\n"));
 }
 
 void mode(Command cmd){
-  Serial.println("Mode...");
+  //Serial.println("Mode...");
   // Write mode register
   if (cmd.nargs > 0) multi_write(cmd.flag, "Mode", REG_MODE, hex2char(cmd.args[0]), 8);
   // Read mode register
   multi_read(cmd.flag, "Mode", REG_MODE, 8);
-  Serial.println("MODE COMPLETE\n");
+  Serial.println(F("MODE COMPLETE\n"));
 }
 
 void control(Command cmd){
-  Serial.println("Control...");
+  //Serial.println("Control...");
   // Write ADC Control register
   if (cmd.nargs > 0) multi_write(cmd.flag, "Control", REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
   // Read ADC Control register
   multi_read(cmd.flag, "Control", REG_ADC_CONTROL, 8);
-  Serial.println("CONTROL COMPLETE\n");
+  Serial.println(F("CONTROL COMPLETE\n"));
 }
 
 void io_control(Command cmd){
-  Serial.println("IO Control...");
+  //Serial.println("IO Control...");
   // Write IO Control register
   if (cmd.nargs > 0) multi_write(cmd.flag, "IO Control", REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
   // Read IO Control register
   multi_read(cmd.flag, "IO Control", REG_IO_CONTROL, 8);
-  Serial.println("IO CONTROL COMPLETE\n");
+  Serial.println(F("IO CONTROL COMPLETE\n"));
 }
 
 void filter(Command cmd) {
-  Serial.println("Filter...");
+  //Serial.println("Filter...");
   // Write Filter register
   if (cmd.nargs > 0) multi_write(cmd.flag, "Filter", REG_FILTER, hex2char(cmd.args[0]), 8);
   // Read Filter register
   multi_read(cmd.flag, "Filter", REG_FILTER, 8);
-  Serial.println("FILTER COMPLETE\n");
+  Serial.println(F("FILTER COMPLETE\n"));
 }
 
 void id(Command cmd){
-  Serial.println("ID...");
+  //Serial.println("ID...");
   // Write ID register
   if (cmd.nargs > 0) multi_write(cmd.flag, "ID", REG_ID, hex2char(cmd.args[0]), 8);
   // Read ID register
   multi_read(cmd.flag, "ID", REG_ID, 8);
-  Serial.println("ID COMPLETE\n");
+  Serial.println(F("ID COMPLETE\n"));
 }
 
 void temp_probe(Command cmd){
-  Serial.println("Temp Probe...");
+  //Serial.println("Temp Probe...");
 
-  if (cmd.flag == "") cmd.flag = "abcd";
+  if (cmd.flag == "") cmd.flag = allTM;
   if (cmd.nargs == 0) {
     cmd.nargs = 3;
     cmd.args[0] = "1";
@@ -618,97 +663,27 @@ void temp_probe(Command cmd){
   }
   board_select('a');
   delay(10);
-  Serial.println("TEMP PROBE READ COMPLETE\n");
+  Serial.println(F("TEMP PROBE READ COMPLETE\n"));
 }
 
-void heater_ON(Command cmd){
+void heater(Command cmd){
+  //Serial.println("Heater...");
   if (cmd.nargs == 0) {
-    cmd.nargs = 4;
-    cmd.args[0] = "1";
-    cmd.args[1] = "2";
-    cmd.args[2] = "3";
-    cmd.args[3] = "4";
+    Serial.println("ERROR: No heater state selected.");
+    return;
   }
 
-  if (cmd.flag == "") cmd.flag = "abcd";
-
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("TM Board " + String(board) + " Selecting Heaters");
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    for (uint8_t j=0; j<cmd.nargs; j++) {
-      int heater = cmd.args[j].toInt();
-      if (heater < 1 || heater > 4) {
-        Serial.println("ERROR: Invalid heater selected.");
-        continue;
-      }
-      switch (heater) {
-        case 1:
-          digitalWrite(PIN_HEATER_1, HIGH);
-          break;
-        case 2:
-          digitalWrite(PIN_HEATER_2, HIGH);
-          break;
-        case 3:
-          digitalWrite(PIN_HEATER_3, HIGH);
-          break;
-        case 4:
-          digitalWrite(PIN_HEATER_4, HIGH);
-          break;
-      }
-      Serial.println("Heater " + String(heater) + " ON");
-    }
-    Serial.println("\n");
-  }
-  Serial.println("Heater Toggle ON Complete\n");
-}
-
-void heater_OFF(Command cmd){
-  if (cmd.nargs == 0) {
-    cmd.nargs = 4;
-    cmd.args[0] = "1";
-    cmd.args[1] = "2";
-    cmd.args[2] = "3";
-    cmd.args[3] = "4";
+  String state = cmd.args[0];
+  state.toUpperCase();
+  if (state != "ON" || state != "OFF") {
+    Serial.println("ERROR: Invalid heater state selected.");
+    return;
   }
 
-  if (cmd.flag == "") cmd.flag = "abcd";
+  removeArg(cmd, 0);
 
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("TM Board " + String(board) + " selecting Heaters");
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    for (uint8_t j=0; j<cmd.nargs; j++) {
-      int heater = cmd.args[j].toInt();
-      if (heater < 1 || heater > 4) {
-        Serial.println("ERROR: Invalid heater selected.");
-        continue;
-      }
-      switch (heater) {
-        case 1:
-          digitalWrite(PIN_HEATER_1, LOW);
-          break;
-        case 2:
-          digitalWrite(PIN_HEATER_2, LOW);
-          break;
-        case 3:
-          digitalWrite(PIN_HEATER_3, LOW);
-          break;
-        case 4:
-          digitalWrite(PIN_HEATER_4, LOW);
-          break;
-      }
-      Serial.println("Heater " + String(heater) + " OFF");
-    }
-    Serial.println("\n");
-  }
-  Serial.println("Heater Toggle OFF Complete\n");
+  if (state == "ON") switch_heater(cmd, HIGH);
+  else switch_heater(cmd, LOW);
 }
 
 
@@ -728,8 +703,7 @@ CommandEntry command_table[] = {
   {"filter", filter},
   {"id", id},
   {"probe", temp_probe},
-  {"heaterON", heater_ON},
-  {"heaterOFF", heater_OFF},
+  {"heater", heater},
 };
 
 void setup() {
