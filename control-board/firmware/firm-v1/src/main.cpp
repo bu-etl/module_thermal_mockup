@@ -428,7 +428,7 @@ void calibrate(Command cmd) {
   if (cmd.flag == "" && cmd.nargs == 0) {
     // Calibrate all channels on all TM ADCs
     for (uint8_t i=0; i<4; i++) {
-      Serial.println("Calibrating TM Board " + String(i+1));
+      Serial.println("Calibrating TM Board " + cs2TM(i<<2));
       chip_select(i<<2);
       for (uint8_t j=0; j<8; j++) {
         calibrate_channel((unsigned char)j, String(j+1));
@@ -438,25 +438,7 @@ void calibrate(Command cmd) {
     Serial.println("FULL CALIBRATION COMPLETE\n");
     return;
   } else if (cmd.flag == ""){
-    //Serial.println("found no flag, but found args:" + String(cmd.nargs));
-    //Serial.println("this is the first arg" + cmd.args[0]);
-
-    // Calibrate specifc channel(s) on all TM ADCs
-    for (uint8_t i=0; i<cmd.nargs; i++) {
-      byte channel_id = cmd.args[i].toInt();
-      if (channel_id < 1 || channel_id > 8) {
-        Serial.println("ERROR: Invalid channel selected to calibrate all boards.");
-        return;
-      }
-      for (uint8_t j=0; j<4; j++) {
-        //Serial.println(j<<2, HEX);
-        chip_select(j<<2);
-        Serial.println("TM Board " + cs2TM(j<<2));
-        calibrate_channel((unsigned char)(channel_id-1), cmd.args[i]);
-      }
-    }
-    Serial.println("CALIBRATION COMPLETE ON ALL TM BOARDS\n");
-    return;
+    cmd.flag = "abcd";
   }
 
   // Calibrate specifc TM board(s)
@@ -497,23 +479,7 @@ void measure(Command cmd) {
 
   // Measure specified channels on all TM boards
   if (cmd.flag == ""){
-    for (uint8_t i=0; i<cmd.nargs; i++) {
-      byte channel_id = cmd.args[0].toInt();
-
-      //skip itteration if invalid channel
-      if (channel_id < 1 || channel_id > 8) {
-        Serial.println("ERROR: Invalid channel selected to measure.");
-        continue;
-      }
-
-      //measure channel on all TM boards
-      for (uint8_t j=0; j<4; j++) {
-        chip_select(j<<2);
-        Serial.println("TM Board " + String(cs2TM(j<<2)) + " Channel " + String(channel_id) + ": 0x" + String(read_channel(channel_id), HEX));
-      }
-    }
-    Serial.println("MEASURE ON ALL TM COMPLETE");
-    return;
+    cmd.flag = "abcd";
   }
 
   // Measure specified channels on specified TM boards
@@ -537,8 +503,9 @@ void measure(Command cmd) {
 
       Serial.println("TM Board " + String(board) + " Channel " + cmd.args[j] + ": 0x" + String(read_channel(channel_id), HEX));
     }
+    Serial.println("\n");
   }
-  Serial.println("MEASURE COMPLETE");
+  Serial.println("MEASURE COMPLETE\n");
 }
 
 void status(Command cmd) {
@@ -604,6 +571,11 @@ void id(Command cmd){
   Serial.println("ID COMPLETE\n");
 }
 
+void temp_probe(Command cmd){
+  Serial.println("Temp Probe...");
+  
+}
+
 
 /* ----------------------------------------------------- 
   Setup 
@@ -615,11 +587,12 @@ CommandEntry command_table[] = {
   {"status", status},
   {"mode", mode},
   {"control", control},
-  {"io_control", io_control},
+  {"iocontrol", io_control},
   {"gain", gain},
   {"offset", offset},
   {"filter", filter},
   {"id", id},
+  {"probe", temp_probe},
 };
 
 void setup() {
