@@ -185,6 +185,7 @@ void chip_select(unsigned int addr) {
   digitalWrite(PIN_SEL_1, 0x1 & (addr>>1));
   digitalWrite(PIN_SEL_2, 0x1 & (addr>>2));
   digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
+  clk();
 }
 
 
@@ -350,6 +351,29 @@ int board_select(char board) {
   return 0;
 }
 
+int probe_select(int i) {
+  switch (i){
+    case 1:
+      digitalWrite(PIN_SEL_0, HIGH);
+      digitalWrite(PIN_SEL_1, LOW);
+      break;
+    case 2:
+      digitalWrite(PIN_SEL_0, LOW);
+      digitalWrite(PIN_SEL_1, HIGH);
+      break;
+    case 3:
+      digitalWrite(PIN_SEL_0, HIGH);
+      digitalWrite(PIN_SEL_1, HIGH);
+      break;
+    default:
+      Serial.println("ERROR: Invalid probe selected");
+      return -1;
+      break;
+  }
+  delayMicroseconds(10);
+  return 0;
+}
+
 char cs2TM(int i) {
   switch (i) {
     case 0x0 ... 0x3: return 'a';
@@ -402,15 +426,12 @@ void multi_write(String flag, String name, unsigned char addr, unsigned long val
 ----------------------------------------------------- */
 void reset(Command cmd) {
   Serial.println("Resetting...");
-  if (cmd.flag == "") {
-    // loop through and reset ALL TM ADCs if no flag was given 
-    for (uint8_t i=0; i<4; i++) {
-      chip_select(i<<2);
-      rst();
-    }
-    Serial.println("FULL RESET COMPLETE\n");
-    return;
-  }
+
+  digitalWrite(PIN_ENABLE_B, HIGH);
+  delayMicroseconds(100);
+  digitalWrite(PIN_ENABLE_B, LOW);
+
+  if (cmd.flag == "") cmd.flag = "abcd";
 
   // reset specific TM ADCs based on flag
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
@@ -424,22 +445,8 @@ void reset(Command cmd) {
 
 void calibrate(Command cmd) {
   Serial.println("Calibrating...");
-  // Calibrate ALL TM boards
-  if (cmd.flag == "" && cmd.nargs == 0) {
-    // Calibrate all channels on all TM ADCs
-    for (uint8_t i=0; i<4; i++) {
-      Serial.println("Calibrating TM Board " + cs2TM(i<<2));
-      chip_select(i<<2);
-      for (uint8_t j=0; j<8; j++) {
-        calibrate_channel((unsigned char)j, String(j+1));
-      }
-      Serial.println("\n");
-    }
-    Serial.println("FULL CALIBRATION COMPLETE\n");
-    return;
-  } else if (cmd.flag == ""){
-    cmd.flag = "abcd";
-  }
+  
+  if (cmd.flag == "") cmd.flag = "abcd";
 
   // Calibrate specifc TM board(s)
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
@@ -460,7 +467,7 @@ void calibrate(Command cmd) {
         byte channel_id = cmd.args[j].toInt();
         if (channel_id < 1 || channel_id > 8) {
           Serial.println("ERROR: Invalid channel selected for calibration command.");
-          return;
+          continue;
         }
         calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
       }
@@ -573,7 +580,45 @@ void id(Command cmd){
 
 void temp_probe(Command cmd){
   Serial.println("Temp Probe...");
+
+  if (cmd.flag == "") cmd.flag = "abcd";
+  if (cmd.nargs == 0) {
+    cmd.nargs = 3;
+    cmd.args[0] = "1";
+    cmd.args[1] = "2";
+    cmd.args[2] = "3";
+    return;
+  }
   
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    Serial.println("Reading TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    for (uint8_t j=0; j<cmd.nargs; j++) {
+
+      // skip itteration if invalid probe
+      int probe = cmd.args[j].toInt();
+      if (probe_select(probe) == -1) continue;
+      uint16_t rawValue = 0;
+
+      // Read 16 bits from the TMP121 sensor
+      for (int i = 15; i >= 0; i--) {
+        clk(); 
+        if (digitalRead(PIN_DOUT)) {
+          rawValue |= (1 << i);
+        }
+      }
+
+      Serial.println("Temp Probe " + String(probe) + ": 0x" + String(rawValue, HEX));
+    }
+    Serial.println("\n");
+  }
+  board_select('a');
+  delay(10);
+  Serial.println("TEMP PROBE READ COMPLETE\n");
 }
 
 
@@ -616,7 +661,7 @@ void setup() {
   digitalWrite(PIN_DIN, HIGH);
   digitalWrite(PIN_CS_B, HIGH);
   digitalWrite(PIN_RST_B, LOW);
-  digitalWrite(PIN_ENABLE_B, LOW);
+  digitalWrite(PIN_ENABLE_B, HIGH);
   digitalWrite(PIN_SEL_0, LOW);
   digitalWrite(PIN_SEL_1, LOW);
   digitalWrite(PIN_SEL_2, LOW);
