@@ -414,6 +414,9 @@ void multi_write(String flag, String name, unsigned char addr, unsigned long val
 void switch_heater(Command cmd, byte state){
   String state_str = state ? "ON" : "OFF";
 
+  Serial.println("Toggling Heaters " + state_str);
+  //Serial.println("num args: " + String(cmd.nargs) + " first arg: " + cmd.args[0] + " flag: " + cmd.flag + "\n");
+
   if (cmd.nargs == 0) {
     cmd.nargs = 4;
     cmd.args[0] = "1";
@@ -433,6 +436,7 @@ void switch_heater(Command cmd, byte state){
 
     for (uint8_t j=0; j<cmd.nargs; j++) {
       uint8_t heater = cmd.args[j].toInt();
+      //Serial.println("Trying heater " + String(heater) + "\n" );
       if (heater < 1 || heater > 4) {
         Serial.println(F("ERROR: Invalid heater selected."));
         continue;
@@ -458,11 +462,14 @@ void switch_heater(Command cmd, byte state){
   Serial.println("Heater Toggle " + state_str + " Complete\n");
 }
 
-void removeArg(Command cmd, uint8_t index) {
-  for (uint8_t i = index; i < cmd.nargs - 1; i++) {
-    cmd.args[i] = cmd.args[i + 1];
+Command removeArg(Command cmd) {
+  //Serial.println("arg num: " + String(cmd.nargs));
+  for (uint8_t i = 1; i < cmd.nargs; i++) {
+    cmd.args[i-1] = cmd.args[i];
   }
+  cmd.args[cmd.nargs - 1] = "";
   cmd.nargs--;
+  return cmd;
 }
 
 
@@ -675,12 +682,12 @@ void heater(Command cmd){
 
   String state = cmd.args[0];
   state.toUpperCase();
-  if (state != "ON" || state != "OFF") {
+  if (state != "ON" && state != "OFF") {
     Serial.println("ERROR: Invalid heater state selected.");
     return;
   }
 
-  removeArg(cmd, 0);
+  cmd = removeArg(cmd);
 
   if (state == "ON") switch_heater(cmd, HIGH);
   else switch_heater(cmd, LOW);
