@@ -78,6 +78,19 @@
 #define MODE_SYSTEM_ZERO_SCALE_CALIBRATION 0x06
 #define MODE_SYSTEM_FULL_SCALE_CALIBRATION 0x07
 
+// ADS1118 Config Register Settings
+#define ADS1118_CONFIG_OS_SINGLE 0x8000    // Start single-conversion
+#define ADS1118_CONFIG_MUX_AIN0  0x4000    // Mux AIN0
+#define ADS1118_CONFIG_MUX_AIN1  0x5000    // Mux AIN1
+#define ADS1118_CONFIG_MUX_AIN2  0x6000    // Mux AIN2
+#define ADS1118_CONFIG_MUX_AIN3  0x7000    // Mux AIN3
+#define ADS1118_CONFIG_PGA_6_144 0x0000    // ±6.144V range = Gain 2/3
+#define ADS1118_CONFIG_MODE_SINGLE 0x0100  // Single-shot mode
+#define ADS1118_CONFIG_DR_128SPS 0x0080    // 128 samples per second
+#define ADS1118_CONFIG_TS_MODE 0x0004      // Temperature sensor mode
+#define ADS1118_CONFIG_PULLUP 0x0002       // Enable pull-up
+#define ADS1118_CONFIG_NOP 0x0001          // No operation
+
 // TM Chip Select Addresses
 #define TM_1_ADC 0x0
 #define TM_2_ADC 0x4
@@ -178,6 +191,24 @@ void chip_select(byte addr) {
   clk();
 }
 
+void writeSPI(uint8_t data) {
+  for (int i = 7; i >= 0; i--) {
+    digitalWrite(PIN_DIN, (data & (1 << i)) ? HIGH : LOW);
+    clk();
+  }
+}
+
+unsigned long readSPI(uint16_t size_bits) {
+  unsigned long value = 0;
+  for (int i = size_bits - 1; i >= 0; i--) {
+    clk();
+    if (digitalRead(PIN_DOUT)) {
+      value |= (1 << i);
+    }
+  }
+  return value;
+}
+
 
 /* ----------------------------------------------------- 
   ADC AD77x8 Functions
@@ -212,6 +243,15 @@ void write_register(unsigned char addr, unsigned long value, byte size_bits) {
     clk();
   }
   delay(10);
+
+  /* Idea to simplify the code 
+  writeSPI(0x00); // WENB R/WB CR5 CR6 
+  writeSPI(addr); // ADDR
+
+  for (int i = size_bits - 8; i >= 0; i -= 8) {
+    writeSPI((value >> i) & 0xFF);
+  }
+  */
 }
 
 unsigned long read_register(unsigned char addr, byte size_bits) {
@@ -240,6 +280,12 @@ unsigned long read_register(unsigned char addr, byte size_bits) {
     value = value | bit;
     clk();
   }
+  /* Idea to simplify the code
+  writeSPI(0x00); // WENB R/WB CR5 CR6
+  writeSPI(addr); // ADDR
+  digitalWrite(PIN_DIN, HIGH);
+  unsigned long value = readSPI(size_bits);
+  */
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);
@@ -317,6 +363,30 @@ unsigned long read_channel(unsigned char channel_id) {
   // Serial.printf("status:  %08x\n", status);
   unsigned long adc_value = read_register(REG_ADC_DATA, ADC_BITS_AD7718);
   return adc_value;
+}
+
+
+/* ----------------------------------------------------- 
+  ADC ADS1118 Functions
+----------------------------------------------------- */
+unsigned long  readADS1118(uint16_t config) {
+  
+  digitalWrite(PIN_ENABLE_B, HIGH);
+  digitalWrite(PIN_CS_B, LOW);
+
+  writeSPI(config >> 8);
+  writeSPI(config & 0xFF);
+
+  digitalWrite(PIN_CS_B, HIGH);
+  delay(10);  
+  digitalWrite(PIN_CS_B, LOW);
+
+  unsigned long result = readSPI(16);
+
+  digitalWrite(PIN_CS_B, HIGH);
+  digitalWrite(PIN_ENABLE_B, LOW);
+
+  return result;
 }
 
 
@@ -639,9 +709,10 @@ void temp_probe(Command cmd){
     cmd.args[0] = "1";
     cmd.args[1] = "2";
     cmd.args[2] = "3";
-    return;
   }
   
+  //Serial.println("flag: " + cmd.flag + " nargs: " + String(cmd.nargs));
+
   for (uint8_t i=0; i<cmd.flag.length(); i++) {
     char board = cmd.flag.charAt(i);
     Serial.println("Reading TM Board " + String(board));
@@ -654,15 +725,7 @@ void temp_probe(Command cmd){
       // skip itteration if invalid probe
       int probe = cmd.args[j].toInt();
       if (probe_select(probe) == -1) continue;
-      uint16_t rawValue = 0;
-
-      // Read 16 bits from the TMP121 sensor
-      for (int i = 15; i >= 0; i--) {
-        clk(); 
-        if (digitalRead(PIN_DOUT)) {
-          rawValue |= (1 << i);
-        }
-      }
+      unsigned long rawValue = readSPI(16);
 
       Serial.println("Temp Probe " + String(probe) + ": 0x" + String(rawValue, HEX));
     }
@@ -693,6 +756,48 @@ void heater(Command cmd){
   else switch_heater(cmd, LOW);
 }
 
+void current(Command cmd){
+  if (cmd.nargs != 0){
+    Serial.println(F("ERROR: Current command does not accept arguments."));
+    return;
+  }
+
+  if (cmd.flag == "") cmd.flag = allTM;
+
+  for (uint8_t i=0; i<cmd.flag.length(); i++) {
+    char board = cmd.flag.charAt(i);
+    //Serial.println("Current reading TM Board " + String(board));
+
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+    uint16_t config = ADS1118_CONFIG_OS_SINGLE | ADS1118_CONFIG_PGA_6_144 | ADS1118_CONFIG_MODE_SINGLE | ADS1118_CONFIG_DR_128SPS;
+
+    uint16_t value = readADS1118(config);
+    switch (board)
+    {
+    case 'a':
+      config |= ADS1118_CONFIG_MUX_AIN0;
+      break;
+    case 'b':
+      config |= ADS1118_CONFIG_MUX_AIN1;
+      break;
+    case 'c':
+      config |= ADS1118_CONFIG_MUX_AIN2;
+      break;
+    case 'd':
+      config |= ADS1118_CONFIG_MUX_AIN3;
+      break;
+    default:
+      break;
+    }
+
+    value = readADS1118(config);
+    Serial.println("TM board " + String(board) + " current Reading: 0x" + String(value, HEX));
+  }
+
+  Serial.println(F("CURRENT READING COMPLETE\n"));
+}
+
 
 /* ----------------------------------------------------- 
   Setup 
@@ -711,6 +816,7 @@ CommandEntry command_table[] = {
   {"id", id},
   {"probe", temp_probe},
   {"heater", heater},
+  {"current", current},
 };
 
 void setup() {
