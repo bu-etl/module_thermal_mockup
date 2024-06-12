@@ -571,7 +571,7 @@ void measure(Command cmd) {
 
     for (uint8_t j=0; j<cmd.nargs; j++) {
       //measure specified channels
-      byte channel_id = cmd.args[0].toInt();
+      byte channel_id = cmd.args[j].toInt();
 
       //skip itteration if invalid channel
       if (channel_id < 1 || channel_id > 8) { 
