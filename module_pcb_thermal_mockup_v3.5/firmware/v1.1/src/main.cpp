@@ -309,11 +309,31 @@ unsigned long read_channel(unsigned char channel_id) {
   Command Functions
 ----------------------------------------------------- */
 void reset(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  rst();
 }
 
 void calibrate(Command cmd) {
+  chipSelect(PIN_CSB);
 
+  if (cmd.nargs == 0){
+    for (uint8_t j=0; j<8; j++) {
+        calibrate_channel((unsigned char)j, String(j+1));
+      }
+  } else {
+    for (uint8_t j=0; j<cmd.nargs; j++){
+      byte channel_id = cmd.args[j].toInt();
+
+      // skip iteration if invalid channel
+      if (channel_id < 1 || channel_id > 8) {
+          Serial.println(F("ERROR: Invalid channel selected for calibration command."));
+          continue;
+      }
+
+      calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
+    }
+  }
+  Serial.println(F("CALIBRATION COMPLETE\n"));
 }
 
 void measure(Command cmd) {
@@ -382,8 +402,14 @@ void setup() {
   pinMode(PIN_RSTB, OUTPUT);
 
   digitalWrite(PIN_CLK, LOW);
+
   digitalWrite(PIN_DIN, HIGH);
-  digitalWrite(PIN_CSB, LOW);
+
+  digitalWrite(PIN_CSB, HIGH);
+  digitalWrite(PIN_PROBE_1_CSB, HIGH);
+  digitalWrite(PIN_PROBE_2_CSB, HIGH);
+  digitalWrite(PIN_PROBE_3_CSB, HIGH);
+
   digitalWrite(PIN_RSTB, LOW);
 
   pinMode(PIN_DOUT, INPUT_PULLUP);
