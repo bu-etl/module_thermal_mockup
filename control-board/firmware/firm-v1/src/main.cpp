@@ -481,57 +481,6 @@ void multi_write(String flag, String name, unsigned char addr, unsigned long val
   }
 }
 
-void switch_heater(Command cmd, byte state){
-  String state_str = state ? "ON" : "OFF";
-
-  Serial.println("Toggling Heaters " + state_str);
-  //Serial.println("num args: " + String(cmd.nargs) + " first arg: " + cmd.args[0] + " flag: " + cmd.flag + "\n");
-
-  if (cmd.nargs == 0) {
-    cmd.nargs = 4;
-    cmd.args[0] = "1";
-    cmd.args[1] = "2";
-    cmd.args[2] = "3";
-    cmd.args[3] = "4";
-  }
-
-  if (cmd.flag == "") cmd.flag = allTM;
-
-  for (uint8_t i=0; i<cmd.flag.length(); i++) {
-    char board = cmd.flag.charAt(i);
-    Serial.println("TM Board " + String(board) + " Selecting Heaters");
-
-    // skip itteration if invalid board
-    if (board_select(board) == -1) continue;
-
-    for (uint8_t j=0; j<cmd.nargs; j++) {
-      uint8_t heater = cmd.args[j].toInt();
-      //Serial.println("Trying heater " + String(heater) + "\n" );
-      if (heater < 1 || heater > 4) {
-        Serial.println(F("ERROR: Invalid heater selected."));
-        continue;
-      }
-      switch (heater) {
-        case 1:
-          digitalWrite(PIN_HEATER_1, state);
-          break;
-        case 2:
-          digitalWrite(PIN_HEATER_2, state);
-          break;
-        case 3:
-          digitalWrite(PIN_HEATER_3, state);
-          break;
-        case 4:
-          digitalWrite(PIN_HEATER_4, state);
-          break;
-      }
-      Serial.println("Heater " + String(heater) + " " + state_str);
-    }
-    Serial.println("\n");
-  }
-  Serial.println("Heater Toggle " + state_str + " Complete\n");
-}
-
 Command removeArg(Command cmd) {
   //Serial.println("arg num: " + String(cmd.nargs));
   for (uint8_t i = 1; i < cmd.nargs; i++) {
@@ -750,10 +699,35 @@ void heater(Command cmd){
     return;
   }
 
-  cmd = removeArg(cmd);
+  if (cmd.flag == "") cmd.flag = allTM;
 
-  if (state == "ON") switch_heater(cmd, HIGH);
-  else switch_heater(cmd, LOW);
+  byte control = (state == "ON") ? HIGH : LOW;
+
+  for (uint8_t i=0; i<cmd.flag.length(); i++){
+    char board = cmd.flag.charAt(i);
+    
+    // skip itteration if invalid board
+    if (board_select(board) == -1) continue;
+
+    switch (board){
+      case 'a':
+        digitalWrite(PIN_HEATER_1, control);
+        break;
+      case 'b':
+        digitalWrite(PIN_HEATER_2, control);
+        break;
+      case 'c':
+        digitalWrite(PIN_HEATER_3, control);
+        break;
+      case 'd':
+        digitalWrite(PIN_HEATER_4, control);
+        break;
+      default:
+        break;
+    }
+    Serial.println("Heater " + String(board) + " " + state);
+  }
+  Serial.println(F("HEATER TOGGLE COMPLETE\n"));
 }
 
 void current(Command cmd){
