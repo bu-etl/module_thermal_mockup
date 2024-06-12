@@ -326,7 +326,7 @@ void calibrate(Command cmd) {
 
       // skip iteration if invalid channel
       if (channel_id < 1 || channel_id > 8) {
-          Serial.println(F("ERROR: Invalid channel selected for calibration command."));
+          Serial.println(F("ERROR: Channel ID Invalid"));
           continue;
       }
 
@@ -337,44 +337,112 @@ void calibrate(Command cmd) {
 }
 
 void measure(Command cmd) {
+  chipSelect(PIN_CSB);
+
+  if (cmd.nargs == 0){
+    Serial.println(F("ERROR: No channel selected for measurement."));
+    return;
+  }
+
+  for (uint8_t j=0; j<cmd.nargs; j++){
+    byte channel_id = cmd.args[j].toInt();
+
+    // skip iteration if invalid channel
+    if (channel_id < 1 || channel_id > 8) {
+        Serial.println(F("ERROR: Channel ID Invalid"));
+        continue;
+    }
+
+    unsigned long adc_value = read_channel(channel_id);
+    Serial.printf("measure %d %08x\n", channel_id, adc_value);
+  }
 
 }
 
 void status(Command cmd){
-
+  chipSelect(PIN_CSB);
+  unsigned long value = read_register(REG_STATUS, 8);
+  Serial.printf("status  %08x\n", value);
 }
 
 void mode(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  if (cmd.nargs > 0) write_register(REG_MODE, hex2char(cmd.args[0]), 8);
+  unsigned long value = read_register(REG_MODE, 8);
+  Serial.printf("mode  %08x\n", value);
 }
 
 void control(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  if (cmd.nargs > 0) write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
+  unsigned long value = read_register(REG_ADC_CONTROL, 8);
+  Serial.printf("control  %08x\n", value);
 }
 
 void io_control(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  if (cmd.nargs > 0) write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
+  unsigned long value = read_register(REG_IO_CONTROL, 8);
+  Serial.printf("io_control  %08x\n", value);
 }
 
 void gain(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  unsigned long value = read_register(REG_ADC_GAIN, 24);
+  Serial.printf("gain  %08x\n", value);
 }
 
 void offset(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  unsigned long value = read_register(REG_ADC_OFFSET, 24);
+  Serial.printf("offset  %08x\n", value);
 }
 
 void filter(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  if (cmd.nargs > 0) write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
+  unsigned long value = read_register(REG_FILTER, 8);
+  Serial.printf("filter  %08x\n", value);
 }
 
 void id(Command cmd) {
-
+  chipSelect(PIN_CSB);
+  if (cmd.nargs > 0) write_register(REG_ID, hex2char(cmd.args[0]), 8);
+  unsigned long value = read_register(REG_ID, 8);
+  Serial.printf("id  %08x\n", value);
 }
 
 void temp_probe(Command cmd) {
+  if (cmd.nargs == 0){
+    Serial.println(F("ERROR: No probe selected for measurement."));
+    return;
+  }
 
+  for (uint8_t j=0; j<cmd.nargs; j++){
+    byte probe_id = cmd.args[j].toInt();
+
+    // skip iteration if invalid probe
+    if (probe_id < 1 || probe_id > 3) {
+        Serial.println(F("ERROR: Probe Invalid"));
+        continue;
+    }
+
+    switch (probe_id) {
+      case 1:
+        chipSelect(PIN_PROBE_1_CSB);
+        break;
+      case 2:
+        chipSelect(PIN_PROBE_2_CSB);
+        break;
+      case 3:
+        chipSelect(PIN_PROBE_3_CSB);
+        break;
+    }
+    unsigned long rawValue = readSPI(16);
+    Serial.println("Temp Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
+  }
 }
+
 
 /* ----------------------------------------------------- 
   Setup 
