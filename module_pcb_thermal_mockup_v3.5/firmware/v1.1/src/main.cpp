@@ -1,7 +1,6 @@
 #include <Arduino.h>
-#include "command.h"
 // For some reason the compiler needs Command in a header file :|
-
+#include "command.h"
 
 // Pin Assignments
 #define PIN_CLK 2
@@ -10,6 +9,9 @@
 #define PIN_RDYB 5
 #define PIN_CSB 3
 #define PIN_RSTB 4
+#define PIN_PROBE_1_CSB 6
+#define PIN_PROBE_2_CSB 7
+#define PIN_PROBE_3_CSB 8
 
 // Bits for ADC
 #define ADC_BITS_AD7718 24
@@ -72,16 +74,19 @@
 #define MODE_SYSTEM_ZERO_SCALE_CALIBRATION 0x06
 #define MODE_SYSTEM_FULL_SCALE_CALIBRATION 0x07
 
-// Function declarations
-void write_register(unsigned char addr, unsigned long value, unsigned int size_bits);
+const int cs_pins[4] = {PIN_CSB, PIN_PROBE_1_CSB, PIN_PROBE_2_CSB, PIN_PROBE_3_CSB};
 
+
+/* ----------------------------------------------------- 
+  Parsing Functions
+----------------------------------------------------- */
 unsigned char hex2char(String s) {
   if (s.length() < 2) {
     Serial.println("ERROR: Bad Hex conversion, must be two characters.");
     return 0;
   }
   unsigned char out = 0;
-  for (uint i=0; i<2; i++) {
+  for (int i=0; i<2; i++) {
     out = out << 4;
     char current = s.charAt(i);
     switch (current) {
@@ -106,16 +111,35 @@ unsigned char hex2char(String s) {
   return out;
 }
 
-void reset() {
-  digitalWrite(PIN_RSTB, LOW);
-  delayMicroseconds(100);
-  digitalWrite(PIN_RSTB, HIGH);
-  
-  // Setup IO control to set P1 and P2 to inputs
-  // they are unconnected on the board and unused
-  write_register(REG_IO_CONTROL, 0b00000000, 8);
+Command parse_command(String line) {
+  Command command;
+  command.nargs = 0;
+  int split;
+  line.trim();
+
+  split = line.indexOf(' ');
+  if (split < 0) split = line.length();
+  command.cmd = line.substring(0, split);
+  line = line.substring(split);
+  line.trim();
+  // Serial.printf("Command: %s\n", command.cmd.c_str());
+
+  while(line.length() > 0 && command.nargs < MAX_ARGS) {
+    split = line.indexOf(' ');
+    if (split < 0) split = line.length();
+    command.args[command.nargs] = line.substring(0, split);
+    command.args[command.nargs].trim();
+    // Serial.printf("Argument %d: '%s'",command.nargs, command.args[command.nargs].c_str());
+    command.nargs++;
+    line = line.substring(split);
+    line.trim();
+  }
+  return command;
 }
 
+/* ----------------------------------------------------- 
+  SPI Functions
+----------------------------------------------------- */
 void clk() {
   delayMicroseconds(100);
   digitalWrite(PIN_CLK, HIGH);
@@ -123,6 +147,39 @@ void clk() {
   digitalWrite(PIN_CLK, LOW);
 }
 
+void writeSPI(uint8_t data) {
+  for (uint8_t i = 7; i >= 0; i--) {
+    digitalWrite(PIN_DIN, (data & (1 << i)) ? HIGH : LOW);
+    clk();
+  }
+}
+
+unsigned long readSPI(uint8_t size_bits) {
+  unsigned long value = 0;
+  for (uint8_t i = size_bits - 1; i >= 0; i--) {
+    clk();
+    if (digitalRead(PIN_DOUT)) {
+      value |= (1 << i);
+    }
+  }
+  return value;
+}
+
+void chipSelect(uint8_t pin) {
+  for (uint8_t i = 0; i < 4; i++) {
+    if (cs_pins[i] != pin) {
+      digitalWrite(cs_pins[i], HIGH);
+      clk();
+    }
+  }
+  digitalWrite(pin, LOW);
+  clk();
+}
+
+
+/* ----------------------------------------------------- 
+  ADC AD77x8 Functions
+----------------------------------------------------- */
 unsigned long read_register(unsigned char addr, unsigned int size_bits) {
   
   digitalWrite(PIN_DIN, LOW);  // WENB
@@ -187,6 +244,16 @@ void write_register(unsigned char addr, unsigned long value, unsigned int size_b
   delay(10);
 }
 
+void rst() {
+  digitalWrite(PIN_RSTB, LOW);
+  delayMicroseconds(100);
+  digitalWrite(PIN_RSTB, HIGH);
+  
+  // Setup IO control to set P1 and P2 to inputs
+  // they are unconnected on the board and unused
+  write_register(REG_IO_CONTROL, 0b00000000, 8);
+}
+
 void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
   // write_register(REG_MODE, 0b01100011, 8);
@@ -237,32 +304,75 @@ unsigned long read_channel(unsigned char channel_id) {
   return adc_value;
 }
 
-Command parse_command(String line) {
-  Command command;
-  command.nargs = 0;
-  int split;
-  line.trim();
 
-  split = line.indexOf(' ');
-  if (split < 0) split = line.length();
-  command.cmd = line.substring(0, split);
-  line = line.substring(split);
-  line.trim();
-  // Serial.printf("Command: %s\n", command.cmd.c_str());
+/* ----------------------------------------------------- 
+  Command Functions
+----------------------------------------------------- */
+void reset(Command cmd) {
 
-  while(line.length() > 0 && command.nargs < MAX_ARGS) {
-    split = line.indexOf(' ');
-    if (split < 0) split = line.length();
-    command.args[command.nargs] = line.substring(0, split);
-    command.args[command.nargs].trim();
-    // Serial.printf("Argument %d: '%s'",command.nargs, command.args[command.nargs].c_str());
-    command.nargs++;
-    line = line.substring(split);
-    line.trim();
-  }
-  return command;
 }
 
+void calibrate(Command cmd) {
+
+}
+
+void measure(Command cmd) {
+
+}
+
+void status(Command cmd){
+
+}
+
+void mode(Command cmd) {
+
+}
+
+void control(Command cmd) {
+
+}
+
+void io_control(Command cmd) {
+
+}
+
+void gain(Command cmd) {
+
+}
+
+void offset(Command cmd) {
+
+}
+
+void filter(Command cmd) {
+
+}
+
+void id(Command cmd) {
+
+}
+
+void temp_probe(Command cmd) {
+
+}
+
+/* ----------------------------------------------------- 
+  Setup 
+----------------------------------------------------- */
+CommandEntry command_table[] = {
+  {"reset", reset},
+  {"calibrate", calibrate},
+  {"measure", measure},
+  {"status", status},
+  {"mode", mode},
+  {"control", control},
+  {"iocontrol", io_control},
+  {"gain", gain},
+  {"offset", offset},
+  {"filter", filter},
+  {"id", id},
+  {"probe", temp_probe},
+};
 
 void setup() {
   // put your setup code here, to run once:
@@ -283,85 +393,20 @@ void setup() {
 }
 
 void loop() {
-
   if (Serial.available() == 0) return;
 
   String line = Serial.readStringUntil('\n');
-  // Serial.println(line);
+
+  Serial.println("Received command: " + line);
   Command command = parse_command(line);
-
-  if (command.cmd == "reset") {
-      reset();
-
-  } else if (command.cmd == "calibrate") {
-      if (command.nargs == 0) {
-        calibrate_channel(ADC_CONTROL_AIN1_PSEUDODIFFERENTIAL, "1"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN2_PSEUDODIFFERENTIAL, "2"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN3_PSEUDODIFFERENTIAL, "3"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN4_PSEUDODIFFERENTIAL, "4"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN5_PSEUDODIFFERENTIAL, "5"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN6_PSEUDODIFFERENTIAL, "6"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN7_PSEUDODIFFERENTIAL, "7"); delay(10);
-        calibrate_channel(ADC_CONTROL_AIN8_PSEUDODIFFERENTIAL, "8");
-        Serial.println("CALIBRATION COMPLETE");
-      } else if (command.nargs == 1) {
-      long channel_id = command.args[0].toInt();
-      if (channel_id < 1 || channel_id > 8) {
-        Serial.println("  ERROR: Channel ID Invalid");
-        return;
-      }
-      calibrate_channel((unsigned char)(channel_id-1), command.args[0]);
-      }
-  } else if (command.cmd == "measure") {
-      long channel_id = command.args[0].toInt();
-      if (channel_id < 1 || channel_id > 8) {
-        Serial.println("  ERROR: Channel ID Invalid");
-        return;
-      }
-      unsigned long value = read_channel(channel_id);
-      Serial.printf("measure %d %08x\n", channel_id, value);
-  } else if (command.cmd == "status") {
-      unsigned long value = read_register(REG_STATUS, 8);
-      Serial.printf("status  %08x\n", value);
-  } else if (command.cmd == "mode") {
-      if (command.nargs > 0) {
-        write_register(REG_MODE, hex2char(command.args[0]), 8);
-      }
-      unsigned long value = read_register(REG_MODE, 8);
-      Serial.printf("mode  %08x\n", value);
-  } else if (command.cmd == "control") {
-      if (command.nargs > 0) {
-        write_register(REG_ADC_CONTROL, hex2char(command.args[0]), 8);
-      }
-      unsigned long value = read_register(REG_ADC_CONTROL, 8);
-      Serial.printf("control  %08x\n", value);
-  } else if (command.cmd == "iocontrol") {
-      if (command.nargs > 0) {
-        write_register(REG_IO_CONTROL, hex2char(command.args[0]), 8);
-      }
-      unsigned long value = read_register(REG_IO_CONTROL, 8);
-      Serial.printf("iocontrol  %08x\n", value);
-  } else if (command.cmd == "filter") {
-      if (command.nargs > 0) {
-        write_register(REG_FILTER, hex2char(command.args[0]), 8);
-      }
-      unsigned long value = read_register(REG_FILTER, 8);
-      Serial.printf("  %08x\n", value);
-  } else if (command.cmd == "data") {
-      unsigned long value = read_register(REG_ADC_DATA, 24);
-      float ratio = (float) value / (float) 0xFFFFFF;
-      Serial.printf("data  %08x, %.2f\n", value, ratio);
-  } else if (command.cmd == "offset") {
-      unsigned long value = read_register(REG_ADC_OFFSET, 24);
-      Serial.printf("offset  %08x\n", value);
-  } else if (command.cmd == "gain") {
-      unsigned long value = read_register(REG_ADC_GAIN, 24);
-      Serial.printf("gain  %08x\n", value);
-  } else if (command.cmd == "id") {
-      if (command.nargs > 0) {
-        write_register(REG_ID, hex2char(command.args[0]), 8);
-      }
-      unsigned long value = read_register(REG_ID, 8);
-      Serial.printf("id  %08x\n", value);
+  
+  bool found = false;
+  for (int i = 0; command_table[i].name != NULL; i++) {
+    if (command.cmd == command_table[i].name) {
+      command_table[i].func(command);
+      found = true;
+      break;
+    }
   }
+  if (!found) Serial.println("ERROR: Unknown command");
 }
