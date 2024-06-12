@@ -173,7 +173,9 @@ void chipSelect(uint8_t pin) {
     }
   }
   digitalWrite(pin, LOW);
-  clk();
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
+  delay(10);
 }
 
 
@@ -256,16 +258,22 @@ void rst() {
 
 void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
-  // write_register(REG_MODE, 0b01100011, 8);
+  write_register(REG_MODE, 0b01100011, 8);
 
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
+  int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
     // Serial.printf("Mode A: %02x\n", mode_value);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
+    cnt++;
+    if (cnt > 100) {
+      Serial.println("ERROR: Calibration failed, timeout.");
+      return;
+    }
   }
 
   write_register(REG_MODE, MODE_FULL_SCALE_CALIBRATION, 8);
@@ -311,27 +319,35 @@ unsigned long read_channel(unsigned char channel_id) {
 void reset(Command cmd) {
   chipSelect(PIN_CSB);
   rst();
+  Serial.println(F("RESET COMPLETE\n"));
 }
 
 void calibrate(Command cmd) {
   chipSelect(PIN_CSB);
 
   if (cmd.nargs == 0){
-    for (uint8_t j=0; j<8; j++) {
-        calibrate_channel((unsigned char)j, String(j+1));
-      }
-  } else {
-    for (uint8_t j=0; j<cmd.nargs; j++){
-      byte channel_id = cmd.args[j].toInt();
+    cmd.nargs = 8;
+    cmd.args[0] = "1";
+    cmd.args[1] = "2";
+    cmd.args[2] = "3";
+    cmd.args[3] = "4";
+    cmd.args[4] = "5";
+    cmd.args[5] = "6";
+    cmd.args[6] = "7";
+    cmd.args[7] = "8";
+  } 
 
-      // skip iteration if invalid channel
-      if (channel_id < 1 || channel_id > 8) {
-          Serial.println(F("ERROR: Channel ID Invalid"));
-          continue;
-      }
+  for (uint8_t j=0; j<cmd.nargs; j++){
+    byte channel_id = cmd.args[j].toInt();
 
-      calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
+    // skip iteration if invalid channel
+    if (channel_id < 1 || channel_id > 8) {
+        Serial.println(F("ERROR: Channel ID Invalid"));
+        continue;
     }
+
+    calibrate_channel((unsigned char)(channel_id-1), cmd.args[j]);
+    delay(10);
   }
   Serial.println(F("CALIBRATION COMPLETE\n"));
 }
@@ -356,7 +372,7 @@ void measure(Command cmd) {
     unsigned long adc_value = read_channel(channel_id);
     Serial.printf("measure %d %08x\n", channel_id, adc_value);
   }
-
+  Serial.println(F("MEASUREMENT COMPLETE\n"));
 }
 
 void status(Command cmd){
@@ -460,6 +476,7 @@ CommandEntry command_table[] = {
   {"filter", filter},
   {"id", id},
   {"probe", temp_probe},
+  {NULL, NULL}
 };
 
 void setup() {
@@ -473,7 +490,7 @@ void setup() {
 
   digitalWrite(PIN_DIN, HIGH);
 
-  digitalWrite(PIN_CSB, HIGH);
+  digitalWrite(PIN_CSB, LOW);
   digitalWrite(PIN_PROBE_1_CSB, HIGH);
   digitalWrite(PIN_PROBE_2_CSB, HIGH);
   digitalWrite(PIN_PROBE_3_CSB, HIGH);
@@ -502,5 +519,8 @@ void loop() {
       break;
     }
   }
-  if (!found) Serial.println("ERROR: Unknown command");
+  if (!found) { 
+    Serial.println("ERROR: Unknown command\n");
+    return;
+  }
 }
