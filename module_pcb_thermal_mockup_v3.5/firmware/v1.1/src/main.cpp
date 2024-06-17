@@ -148,19 +148,22 @@ void clk() {
 }
 
 void writeSPI(uint8_t data) {
-  for (uint8_t i = 7; i >= 0; i--) {
+  for (int i = 7; i >= 0; i--) {
     digitalWrite(PIN_DIN, (data & (1 << i)) ? HIGH : LOW);
     clk();
   }
 }
 
 unsigned long readSPI(uint8_t size_bits) {
+  //Serial.println("Reading SPI");
+  //Serial.println("Size Bits: " + String(size_bits));
   unsigned long value = 0;
-  for (uint8_t i = size_bits - 1; i >= 0; i--) {
-    clk();
+  for (int i = size_bits - 1; i >= 0; i--) {
+    //Serial.println("Reading bit " + String(i));
     if (digitalRead(PIN_DOUT)) {
       value |= (1 << i);
     }
+    clk();
   }
   return value;
 }
@@ -183,7 +186,7 @@ void chipSelect(uint8_t pin) {
   ADC AD77x8 Functions
 ----------------------------------------------------- */
 unsigned long read_register(unsigned char addr, unsigned int size_bits) {
-  
+  /*
   digitalWrite(PIN_DIN, LOW);  // WENB
   clk();
   digitalWrite(PIN_DIN, HIGH);  // R/WB
@@ -201,6 +204,12 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
   digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
   clk();
   digitalWrite(PIN_DIN, HIGH);
+  */
+  writeSPI(0x40 | addr); // WENB R/WB CR5 CR6 = 0x4
+  digitalWrite(PIN_DIN, HIGH);
+  unsigned long value = readSPI(size_bits);
+
+  /*
   unsigned long value = 0;
   for(uint i=0; i<size_bits; i++) {
     unsigned char bit = digitalRead(PIN_DOUT);
@@ -208,6 +217,8 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
     value = value | bit;
     clk();
   }
+  */
+ 
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);
@@ -263,10 +274,12 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
+
+  //Serial.println("Before while loop");
   int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
-    // Serial.printf("Mode A: %02x\n", mode_value);
+    //Serial.printf("Mode A: %02x\n", mode_value);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
     cnt++;
@@ -275,6 +288,8 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
       return;
     }
   }
+
+  Serial.println("Zero Scale Calibration succeeded!");
 
   write_register(REG_MODE, MODE_FULL_SCALE_CALIBRATION, 8);
   while(true) {
@@ -442,7 +457,7 @@ void temp_probe(Command cmd) {
         Serial.println(F("ERROR: Probe Invalid"));
         continue;
     }
-
+    //Serial.println("Before switch statement");
     switch (probe_id) {
       case 1:
         chipSelect(PIN_PROBE_1_CSB);
@@ -454,7 +469,9 @@ void temp_probe(Command cmd) {
         chipSelect(PIN_PROBE_3_CSB);
         break;
     }
+    //Serial.println("Reading Temp Probe " + String(probe_id));
     unsigned long rawValue = readSPI(16);
+    //Serial.println("After Read SPI");
     Serial.println("Temp Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
   }
 }
