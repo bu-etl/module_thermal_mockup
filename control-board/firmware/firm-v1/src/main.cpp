@@ -198,13 +198,13 @@ void writeSPI(uint8_t data) {
   }
 }
 
-unsigned long readSPI(uint16_t size_bits) {
+unsigned long readSPI(uint8_t size_bits) {
   unsigned long value = 0;
   for (int i = size_bits - 1; i >= 0; i--) {
-    clk();
     if (digitalRead(PIN_DOUT)) {
       value |= (1 << i);
     }
+    clk();
   }
   return value;
 }
@@ -255,37 +255,10 @@ void write_register(unsigned char addr, unsigned long value, byte size_bits) {
 }
 
 unsigned long read_register(unsigned char addr, byte size_bits) {
-  
-  digitalWrite(PIN_DIN, LOW);  // WENB
-  clk();
-  digitalWrite(PIN_DIN, HIGH);  // R/WB
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR5
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR6
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>3));  // ADDR bit 3
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>2));  // ADDR bit 2
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>1));  // ADDR bit 1
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
-  clk();
-  digitalWrite(PIN_DIN, HIGH);
-  unsigned long value = 0;
-  for(uint8_t i=0; i<size_bits; i++) {
-    unsigned char bit = digitalRead(PIN_DOUT);
-    value = value << 1;
-    value = value | bit;
-    clk();
-  }
-  /* Idea to simplify the code
-  writeSPI(0x00); // WENB R/WB CR5 CR6
-  writeSPI(addr); // ADDR
+  writeSPI(0x40 | addr); // WENB R/WB CR5 CR6 = 0x4
   digitalWrite(PIN_DIN, HIGH);
   unsigned long value = readSPI(size_bits);
-  */
+  
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);

@@ -218,7 +218,7 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
     clk();
   }
   */
- 
+
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);
@@ -226,7 +226,7 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
 }
 
 void write_register(unsigned char addr, unsigned long value, unsigned int size_bits) {
-  
+  /*
   digitalWrite(PIN_DIN, LOW);  // WENB
   clk();
   digitalWrite(PIN_DIN, LOW);  // R/WB
@@ -243,17 +243,14 @@ void write_register(unsigned char addr, unsigned long value, unsigned int size_b
   clk();
   digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
   clk();
+  */
+  
+  writeSPI(0x00 | addr); // WENB R/WB CR5 CR6 = 0x0
 
-  unsigned long mask = 0x1 << (size_bits-1);
-  for(uint i=0; i<size_bits; i++) {
-    if (mask & value) {
-      digitalWrite(PIN_DIN, HIGH);
-    } else {
-      digitalWrite(PIN_DIN, LOW);
-    }
-    mask = mask >> 1;
-    clk();
+  for (int i = size_bits - 8; i >= 0; i -= 8) {
+    writeSPI((value >> i) & 0xFF);
   }
+  
   delay(10);
 }
 
