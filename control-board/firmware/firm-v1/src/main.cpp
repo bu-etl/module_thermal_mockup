@@ -214,51 +214,20 @@ unsigned long readSPI(uint8_t size_bits) {
   ADC AD77x8 Functions
 ----------------------------------------------------- */
 void write_register(unsigned char addr, unsigned long value, byte size_bits) {
-  
-  digitalWrite(PIN_DIN, LOW);  // WENB
-  clk();
-  digitalWrite(PIN_DIN, LOW);  // R/WB
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR5
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR6
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>3));  // ADDR bit 3
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>2));  // ADDR bit 2
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>1));  // ADDR bit 1
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
-  clk();
 
-  unsigned long mask = 0x1 << (size_bits-1);
-  for(uint8_t i=0; i<size_bits; i++) {
-    if (mask & value) {
-      digitalWrite(PIN_DIN, HIGH);
-    } else {
-      digitalWrite(PIN_DIN, LOW);
-    }
-    mask = mask >> 1;
-    clk();
-  }
-  delay(10);
-
-  /* Idea to simplify the code 
-  writeSPI(0x00); // WENB R/WB CR5 CR6 
-  writeSPI(addr); // ADDR
+  writeSPI(0x00 | addr); // WENB R/WB CR5 CR6 = 0x0
 
   for (int i = size_bits - 8; i >= 0; i -= 8) {
     writeSPI((value >> i) & 0xFF);
   }
-  */
+  delay(10);
 }
 
 unsigned long read_register(unsigned char addr, byte size_bits) {
   writeSPI(0x40 | addr); // WENB R/WB CR5 CR6 = 0x4
   digitalWrite(PIN_DIN, HIGH);
   unsigned long value = readSPI(size_bits);
-  
+
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);
@@ -279,7 +248,6 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
   // write_register(REG_MODE, 0b01100011, 8);
 
-/*
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
@@ -297,26 +265,15 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
   }
-*/
+
   Serial.println(F("Calibration succeeded!"));
 }
 
 unsigned long read_channel(unsigned char channel_id) {
   // write_register(REG_MODE, MODE_NEGBUF | MODE_REFSEL | MODE_CONTINUOUS_CONVERSION, 8); <- REFSEL results in bad range, ie results are clamped.
   write_register(REG_MODE, MODE_NEGBUF | MODE_CONTINUOUS_CONVERSION, 8);
-  // unsigned long mode_value = read_register(REG_MODE, 8);
-  // Serial.printf("mode:  %08x\n", mode_value);
 
-  unsigned char adc_channel;
-  if (channel_id >= 1 && channel_id <= 8) {
-    adc_channel = channel_id - 1;  // Channels 1-8 map directly to 0x0-0x7
-  } else if (channel_id == 9) {
-    adc_channel = 0xE;  // AIN9 (as REFIN2+/AIN9)
-  } else {
-    Serial.println(F("ERROR: Unable to read ADC value, invalid channel ID."));
-    return 0;
-  }
-  write_register(REG_ADC_CONTROL, (adc_channel << 4) | ADC_CONTROL_RANGE_2p56V, 8);
+  write_register(REG_ADC_CONTROL, ((channel_id - 1)<<4) | ADC_CONTROL_RANGE_2p56V, 8);
   // unsigned long control_value = read_register(REG_ADC_CONTROL, 8);
   // Serial.printf("control:  %08x\n", control_value);
 
