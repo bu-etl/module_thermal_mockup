@@ -1,6 +1,7 @@
 import PySide6
 from __feature__ import true_property  # noqa
 import sys
+import csv
 from collections import deque
 from datetime import datetime
 import PySide6.QtWidgets as qtw
@@ -10,7 +11,7 @@ from PySide6 import QtCore
 from PySide6.QtCore import Qt
 
 APP = None
-ENABLED_CHANNELS = [1, 3, 5, 8]
+ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 
 class MainWindow(qtw.QMainWindow):
@@ -47,8 +48,12 @@ class MainWindow(qtw.QMainWindow):
         self.measure_button.clicked.connect(self.readout_adc)
         self.measure_checkbox = qtw.QCheckBox('Continuous Readout')
 
+        self.ref_button = qtw.QPushButton('Readout Vref/ANICOM')
+        self.ref_button.clicked.connect(self.readout_ref)
+
         main_layout.addWidget(self.calibrate_button)
         main_layout.addWidget(self.reset_button)
+        main_layout.addWidget(self.ref_button)
         main_layout.addWidget(self.measure_button)
         main_layout.addWidget(self.measure_checkbox)
 
@@ -85,11 +90,18 @@ class MainWindow(qtw.QMainWindow):
         self.readback_timer.interval = 100  # ms
         self.readback_timer.timeout.connect(self.read_port)
 
+        # CSV file setup
+        self.csv_filename = f'calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+        with open(self.csv_filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms'])
+
     def connect_com_port(self, port_info):
         self.disconnect_com_port()
         self.log(f"Connecting to port: {port_info.portName()}")
         self.port = QSerialPort(port_info)
-        self.port.baudRate = QSerialPort.BaudRate.Baud9600
+ #       self.port.baudRate = QSerialPort.BaudRate.Baud9600
+        self.port.baudRate = QSerialPort.BaudRate.Baud115200
         self.port.breakEnabled = False
         self.port.dataBits = QSerialPort.DataBits.Data8
         self.port.flowControl = QSerialPort.FlowControl.NoFlowControl
@@ -170,7 +182,12 @@ class MainWindow(qtw.QMainWindow):
             self.measurement_data[channel_id].append((dt_minutes, ohms))
             self.history_chart_series[channel_id].append(dt_minutes, ohms)
             delta = ohms - self.measurement_data[channel_id][0][1]
-            self.value_displays[channel_id].text = f"Ch {channel_id}: {ohms:0.6f} {delta:0.6f}"
+            self.value_displays[channel_id].text = f"Ch {channel_id}: {ohms:0.6f} {delta:0.6f} ADC READING: {value}"
+
+            # Append data to CSV file
+            with open(self.csv_filename, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms])
 
             n_points = 300
             if idx > n_points:
@@ -197,6 +214,9 @@ class MainWindow(qtw.QMainWindow):
             if channel_id not in self.measurements_pending:
                 self.measurements_pending.add(channel_id)
                 self.write_port(f'measure {channel_id}')
+
+    def readout_ref(self):
+        self.write_port('read_aincom')
 
 
 def main():

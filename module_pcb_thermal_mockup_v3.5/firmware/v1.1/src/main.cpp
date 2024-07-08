@@ -172,13 +172,10 @@ void chipSelect(uint8_t pin) {
   for (uint8_t i = 0; i < 4; i++) {
     if (cs_pins[i] != pin) {
       digitalWrite(cs_pins[i], HIGH);
-      clk();
+      //nclk();
     }
   }
   digitalWrite(pin, LOW);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  delay(10);
 }
 
 
@@ -267,16 +264,20 @@ void rst() {
 void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
   write_register(REG_MODE, 0b01100011, 8);
+  //Serial.println("Mode set to " + String(read_register(REG_MODE,8), BIN));
 
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
+  //Serial.println("Control set to " + String(read_register(REG_ADC_CONTROL,8), BIN));
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
+  //Serial.println("Mode set to " + String(read_register(REG_MODE,8), BIN));
 
   //Serial.println("Before while loop");
   int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
-    //Serial.printf("Mode A: %02x\n", mode_value);
+    //Serial.println("Mode A: " + String(mode_value, HEX));
+    //Serial.println("Status: " + String(read_register(REG_STATUS, 8), BIN));
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
     cnt++;
@@ -330,12 +331,17 @@ unsigned long read_channel(unsigned char channel_id) {
 ----------------------------------------------------- */
 void reset(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   rst();
+  delay(10);
   Serial.println(F("RESET COMPLETE\n"));
 }
 
 void calibrate(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
 
   if (cmd.nargs == 0){
     cmd.nargs = 8;
@@ -366,6 +372,8 @@ void calibrate(Command cmd) {
 
 void measure(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
 
   if (cmd.nargs == 0){
     Serial.println(F("ERROR: No channel selected for measurement."));
@@ -382,62 +390,87 @@ void measure(Command cmd) {
     }
 
     unsigned long adc_value = read_channel(channel_id);
-    Serial.printf("measure %d %08x\n", channel_id, adc_value);
+    Serial.println("measure " + String(channel_id) + " " + String(adc_value, HEX));
   }
-  Serial.println(F("MEASUREMENT COMPLETE\n"));
+  //Serial.println(F("MEASUREMENT COMPLETE\n"));
+  Serial.println();
 }
 
 void status(Command cmd){
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   unsigned long value = read_register(REG_STATUS, 8);
-  Serial.printf("status  %08x\n", value);
+  Serial.println("status  " + String(value, HEX));
+  Serial.println();
 }
 
 void mode(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   if (cmd.nargs > 0) write_register(REG_MODE, hex2char(cmd.args[0]), 8);
   unsigned long value = read_register(REG_MODE, 8);
-  Serial.printf("mode  %08x\n", value);
+  Serial.println("mode " + String(value, HEX));
+  Serial.println();
 }
 
 void control(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   if (cmd.nargs > 0) write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
   unsigned long value = read_register(REG_ADC_CONTROL, 8);
-  Serial.printf("control  %08x\n", value);
+  Serial.println("control " + String(value, HEX));
+  Serial.println();
 }
 
 void io_control(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   if (cmd.nargs > 0) write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
   unsigned long value = read_register(REG_IO_CONTROL, 8);
-  Serial.printf("io_control  %08x\n", value);
+  Serial.println("io_control " + String(value, HEX));
+  Serial.println();
 }
 
 void gain(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   unsigned long value = read_register(REG_ADC_GAIN, 24);
-  Serial.printf("gain  %08x\n", value);
+  Serial.println("gain  " + String(value, HEX));
+  Serial.println();
 }
 
 void offset(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   unsigned long value = read_register(REG_ADC_OFFSET, 24);
-  Serial.printf("offset  %08x\n", value);
+  Serial.println("offset  " + String(value, HEX));
+  Serial.println();
 }
 
 void filter(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   if (cmd.nargs > 0) write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
   unsigned long value = read_register(REG_FILTER, 8);
-  Serial.printf("filter  %08x\n", value);
+  Serial.println("filter  " + String(value, HEX));
+  Serial.println();
 }
 
 void id(Command cmd) {
   chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
   if (cmd.nargs > 0) write_register(REG_ID, hex2char(cmd.args[0]), 8);
   unsigned long value = read_register(REG_ID, 8);
-  Serial.printf("id  %08x\n", value);
+  Serial.println("id  " + String(value, HEX));
+  Serial.println();
 }
 
 void temp_probe(Command cmd) {
@@ -448,28 +481,49 @@ void temp_probe(Command cmd) {
 
   for (uint8_t j=0; j<cmd.nargs; j++){
     byte probe_id = cmd.args[j].toInt();
-
+    
     // skip iteration if invalid probe
     if (probe_id < 1 || probe_id > 3) {
         Serial.println(F("ERROR: Probe Invalid"));
         continue;
     }
+
+    int cs_signal;
     //Serial.println("Before switch statement");
     switch (probe_id) {
       case 1:
-        chipSelect(PIN_PROBE_1_CSB);
+        cs_signal = PIN_PROBE_1_CSB;
         break;
       case 2:
-        chipSelect(PIN_PROBE_2_CSB);
+        cs_signal = PIN_PROBE_2_CSB;
         break;
       case 3:
-        chipSelect(PIN_PROBE_3_CSB);
+        cs_signal = PIN_PROBE_3_CSB;
         break;
+      default:
+        Serial.println("ERROR: Invalid Probe ID");
+        return;
     }
-    //Serial.println("Reading Temp Probe " + String(probe_id));
+    delay(320);
+    chipSelect(cs_signal);
+    delay(10);
     unsigned long rawValue = readSPI(16);
-    //Serial.println("After Read SPI");
+    digitalWrite(cs_signal, HIGH);
     Serial.println("Temp Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
+    
+    rawValue >>= 3;
+
+    // Handle negative temperatures (12-bit two's complement format)
+    if (rawValue & 0x1000) {
+      rawValue |= 0xE000;  // Sign extend to 16 bits if the temperature is negative
+    }
+    float temperatureC = rawValue * 0.0625;
+  
+    Serial.print("Temperature: ");
+    Serial.print(temperatureC);
+    Serial.println(" °C");
+    Serial.println();
+    delay(1000);
   }
 }
 
@@ -498,6 +552,9 @@ void setup() {
   pinMode(PIN_CLK, OUTPUT);
   pinMode(PIN_DIN, OUTPUT);
   pinMode(PIN_CSB, OUTPUT);
+  pinMode(PIN_PROBE_1_CSB, OUTPUT);
+  pinMode(PIN_PROBE_2_CSB, OUTPUT); 
+  pinMode(PIN_PROBE_3_CSB, OUTPUT);
   pinMode(PIN_RSTB, OUTPUT);
 
   digitalWrite(PIN_CLK, LOW);
@@ -522,7 +579,7 @@ void loop() {
 
   String line = Serial.readStringUntil('\n');
 
-  Serial.println("Received command: " + line);
+  //Serial.println("Received command: " + line);
   Command command = parse_command(line);
   
   bool found = false;
