@@ -82,7 +82,7 @@ const int cs_pins[4] = {PIN_CSB, PIN_PROBE_1_CSB, PIN_PROBE_2_CSB, PIN_PROBE_3_C
 ----------------------------------------------------- */
 unsigned char hex2char(String s) {
   if (s.length() < 2) {
-    Serial.println("ERROR: Bad Hex conversion, must be two characters.");
+    Serial.println("ERROR: Bad Hex conversion, must be two characters");
     return 0;
   }
   unsigned char out = 0;
@@ -376,7 +376,7 @@ void measure(Command cmd) {
   clk(); clk(); clk(); clk();
 
   if (cmd.nargs == 0){
-    Serial.println(F("ERROR: No channel selected for measurement."));
+    Serial.println(F("ERROR: No channel selected for measurement\n"));
     return;
   }
 
@@ -475,7 +475,7 @@ void id(Command cmd) {
 
 void temp_probe(Command cmd) {
   if (cmd.nargs == 0){
-    Serial.println(F("ERROR: No probe selected for measurement."));
+    Serial.println(F("ERROR: No probe selected for measurement\n"));
     return;
   }
 
@@ -509,7 +509,7 @@ void temp_probe(Command cmd) {
     delay(10);
     unsigned long rawValue = readSPI(16);
     digitalWrite(cs_signal, HIGH);
-    Serial.println("Temp Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
+    Serial.print("Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
     
     rawValue >>= 3;
 
@@ -519,12 +519,10 @@ void temp_probe(Command cmd) {
     }
     float temperatureC = rawValue * 0.0625;
   
-    Serial.print("Temperature: ");
-    Serial.print(temperatureC);
-    Serial.println(" °C");
-    Serial.println();
+    Serial.println("  " + String(temperatureC) + " °C");
     delay(1000);
   }
+  Serial.println(F("TEMPERATURE READOUT COMPLETE\n"));
 }
 
 
@@ -579,7 +577,7 @@ void loop() {
 
   String line = Serial.readStringUntil('\n');
 
-  //Serial.println("Received command: " + line);
+  Serial.println("Received command: " + line);
   Command command = parse_command(line);
   
   bool found = false;
