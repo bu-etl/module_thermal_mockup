@@ -137,6 +137,7 @@ Command parse_command(String line) {
   return command;
 }
 
+
 /* ----------------------------------------------------- 
   SPI Functions
 ----------------------------------------------------- */
@@ -155,11 +156,8 @@ void writeSPI(uint8_t data) {
 }
 
 unsigned long readSPI(uint8_t size_bits) {
-  //Serial.println("Reading SPI");
-  //Serial.println("Size Bits: " + String(size_bits));
   unsigned long value = 0;
   for (int i = size_bits - 1; i >= 0; i--) {
-    //Serial.println("Reading bit " + String(i));
     if (digitalRead(PIN_DOUT)) {
       value |= (1 << i);
     }
@@ -172,7 +170,6 @@ void chipSelect(uint8_t pin) {
   for (uint8_t i = 0; i < 4; i++) {
     if (cs_pins[i] != pin) {
       digitalWrite(cs_pins[i], HIGH);
-      //nclk();
     }
   }
   digitalWrite(pin, LOW);
@@ -183,38 +180,9 @@ void chipSelect(uint8_t pin) {
   ADC AD77x8 Functions
 ----------------------------------------------------- */
 unsigned long read_register(unsigned char addr, unsigned int size_bits) {
-  /*
-  digitalWrite(PIN_DIN, LOW);  // WENB
-  clk();
-  digitalWrite(PIN_DIN, HIGH);  // R/WB
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR5
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR6
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>3));  // ADDR bit 3
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>2));  // ADDR bit 2
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>1));  // ADDR bit 1
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
-  clk();
-  digitalWrite(PIN_DIN, HIGH);
-  */
   writeSPI(0x40 | addr); // WENB R/WB CR5 CR6 = 0x4
   digitalWrite(PIN_DIN, HIGH);
   unsigned long value = readSPI(size_bits);
-
-  /*
-  unsigned long value = 0;
-  for(uint i=0; i<size_bits; i++) {
-    unsigned char bit = digitalRead(PIN_DOUT);
-    value = value << 1;
-    value = value | bit;
-    clk();
-  }
-  */
 
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
@@ -223,25 +191,6 @@ unsigned long read_register(unsigned char addr, unsigned int size_bits) {
 }
 
 void write_register(unsigned char addr, unsigned long value, unsigned int size_bits) {
-  /*
-  digitalWrite(PIN_DIN, LOW);  // WENB
-  clk();
-  digitalWrite(PIN_DIN, LOW);  // R/WB
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR5
-  clk();
-  digitalWrite(PIN_DIN, LOW); // CR6
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>3));  // ADDR bit 3
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>2));  // ADDR bit 2
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & (addr>>1));  // ADDR bit 1
-  clk();
-  digitalWrite(PIN_DIN, 0x1 & addr);  // ADDR bit 0
-  clk();
-  */
-  
   writeSPI(0x00 | addr); // WENB R/WB CR5 CR6 = 0x0
 
   for (int i = size_bits - 8; i >= 0; i -= 8) {
@@ -325,6 +274,15 @@ unsigned long read_channel(unsigned char channel_id) {
   return adc_value;
 }
 
+void rw_register(Command cmd, bool enable, String name, unsigned char addr, unsigned int size_bits) {
+  chipSelect(PIN_CSB);
+  clk(); clk(); clk(); clk();
+  clk(); clk(); clk(); clk();
+  if (enable && (cmd.nargs > 0)) write_register(addr, hex2char(cmd.args[0]), size_bits);
+  unsigned long value = read_register(addr, size_bits);
+  Serial.println(name + " " + String(value, HEX));
+  Serial.println();
+}
 
 /* ----------------------------------------------------- 
   Command Functions
@@ -392,85 +350,39 @@ void measure(Command cmd) {
     unsigned long adc_value = read_channel(channel_id);
     Serial.println("measure " + String(channel_id) + " " + String(adc_value, HEX));
   }
-  //Serial.println(F("MEASUREMENT COMPLETE\n"));
-  Serial.println();
+  Serial.println(F("MEASUREMENT COMPLETE\n"));
 }
 
 void status(Command cmd){
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  unsigned long value = read_register(REG_STATUS, 8);
-  Serial.println("status  " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, false, "status", REG_STATUS, 8);
 }
 
 void mode(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  if (cmd.nargs > 0) write_register(REG_MODE, hex2char(cmd.args[0]), 8);
-  unsigned long value = read_register(REG_MODE, 8);
-  Serial.println("mode " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, true, "mode", REG_MODE, 8);
 }
 
 void control(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  if (cmd.nargs > 0) write_register(REG_ADC_CONTROL, hex2char(cmd.args[0]), 8);
-  unsigned long value = read_register(REG_ADC_CONTROL, 8);
-  Serial.println("control " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, true, "control", REG_ADC_CONTROL, 8);
 }
 
 void io_control(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  if (cmd.nargs > 0) write_register(REG_IO_CONTROL, hex2char(cmd.args[0]), 8);
-  unsigned long value = read_register(REG_IO_CONTROL, 8);
-  Serial.println("io_control " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, true, "io_control", REG_IO_CONTROL, 8);
 }
 
 void gain(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  unsigned long value = read_register(REG_ADC_GAIN, 24);
-  Serial.println("gain  " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, false, "gain", REG_ADC_GAIN, 24);
 }
 
 void offset(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  unsigned long value = read_register(REG_ADC_OFFSET, 24);
-  Serial.println("offset  " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, false, "offset", REG_ADC_OFFSET, 24);
 }
 
 void filter(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  if (cmd.nargs > 0) write_register(REG_FILTER, hex2char(cmd.args[0]), 8);
-  unsigned long value = read_register(REG_FILTER, 8);
-  Serial.println("filter  " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, true, "filter", REG_FILTER, 8);
 }
 
 void id(Command cmd) {
-  chipSelect(PIN_CSB);
-  clk(); clk(); clk(); clk();
-  clk(); clk(); clk(); clk();
-  if (cmd.nargs > 0) write_register(REG_ID, hex2char(cmd.args[0]), 8);
-  unsigned long value = read_register(REG_ID, 8);
-  Serial.println("id  " + String(value, HEX));
-  Serial.println();
+  rw_register(cmd, true, "id", REG_ID, 8);
 }
 
 void temp_probe(Command cmd) {
