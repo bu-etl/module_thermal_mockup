@@ -3,12 +3,12 @@
 #include "command.h"
 
 // Pin Assignments
-#define PIN_CLK 2
-#define PIN_DIN 1
-#define PIN_DOUT 0
-#define PIN_RDYB 5
-#define PIN_CSB 3
-#define PIN_RSTB 4
+#define PIN_CLK 2   //Yellow
+#define PIN_DIN 1   //Green
+#define PIN_DOUT 0  //Blue
+#define PIN_RDYB 5  //Purple
+#define PIN_CSB 3   //White
+#define PIN_RSTB 4  //Orange
 #define PIN_PROBE_1_CSB 6
 #define PIN_PROBE_2_CSB 7
 #define PIN_PROBE_3_CSB 8
@@ -350,7 +350,7 @@ void measure(Command cmd) {
     unsigned long adc_value = read_channel(channel_id);
     Serial.println("measure " + String(channel_id) + " " + String(adc_value, HEX));
   }
-  Serial.println(F("MEASUREMENT COMPLETE\n"));
+  //Serial.println(F("MEASUREMENT COMPLETE\n"));
 }
 
 void status(Command cmd){
@@ -489,7 +489,7 @@ void loop() {
 
   String line = Serial.readStringUntil('\n');
 
-  Serial.println("Received command: " + line);
+  //Serial.println("Received command: " + line);
   Command command = parse_command(line);
   
   bool found = false;
