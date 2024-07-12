@@ -2,8 +2,8 @@
 #include "command.h"
 
 // Pin Assignments
-#define PIN_DOUT 0
-#define PIN_DIN 1
+#define PIN_DOUT 5
+#define PIN_DIN 7
 #define PIN_CLK 2
 #define PIN_CS_B 3
 #define PIN_RST_B 4
@@ -188,7 +188,7 @@ void chip_select(byte addr) {
   digitalWrite(PIN_SEL_1, 0x1 & (addr>>1));
   digitalWrite(PIN_SEL_2, 0x1 & (addr>>2));
   digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
-  clk();
+  //clk();
 }
 
 void writeSPI(uint8_t data) {
@@ -605,8 +605,15 @@ void temp_probe(Command cmd){
       int probe = cmd.args[j].toInt();
       if (probe_select(probe) == -1) continue;
       unsigned long rawValue = readSPI(16);
-
-      Serial.println("Temp Probe " + String(probe) + ": 0x" + String(rawValue, HEX));
+      board_select(board);
+      Serial.print("Temp Probe " + String(probe) + ": 0x" + String(rawValue, HEX));
+      rawValue >>= 3;
+      if (rawValue & 0x1000) {
+        rawValue |= 0xE000;  // Sign extend to 16 bits if the temperature is negative
+      }
+      float temperatureC = rawValue * 0.0625;
+      Serial.println("  " + String(temperatureC) + " °C");
+      delay(500);
     }
     Serial.println("\n");
   }
@@ -744,7 +751,7 @@ void setup() {
   digitalWrite(PIN_DIN, HIGH);
   digitalWrite(PIN_CS_B, HIGH);
   digitalWrite(PIN_RST_B, LOW);
-  digitalWrite(PIN_ENABLE_B, HIGH);
+  digitalWrite(PIN_ENABLE_B, LOW);
   digitalWrite(PIN_SEL_0, LOW);
   digitalWrite(PIN_SEL_1, LOW);
   digitalWrite(PIN_SEL_2, LOW);

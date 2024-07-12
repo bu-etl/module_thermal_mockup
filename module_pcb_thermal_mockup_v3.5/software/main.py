@@ -48,7 +48,7 @@ class MainWindow(qtw.QMainWindow):
         self.measure_button.clicked.connect(self.readout_adc)
         self.measure_checkbox = qtw.QCheckBox('Continuous Readout')
 
-        self.ref_button = qtw.QPushButton('Readout Vref/ANICOM')
+        self.ref_button = qtw.QPushButton('Readout Temp Probes')
         self.ref_button.clicked.connect(self.readout_ref)
 
         main_layout.addWidget(self.calibrate_button)
@@ -171,7 +171,7 @@ class MainWindow(qtw.QMainWindow):
             if self.measure_checkbox.checked:
                 self.readout_adc()
             volts = 1.65 + (int(value, 16) / 2**23 - 1) * (1.024*1.65/1)
-            ohms = 47.5E3 / (3.3 / volts - 1)
+            ohms = 1E3 / (3.3 / volts - 1)
             dt_minutes = (datetime.now() - self.run_start_time).seconds / 60
             if ohms > self.history_chart_max:
                 self.history_chart_max = ohms
@@ -216,7 +216,7 @@ class MainWindow(qtw.QMainWindow):
                 self.write_port(f'measure {channel_id}')
 
     def readout_ref(self):
-        self.write_port('read_aincom')
+        self.write_port('probe 1 2 3')
 
 
 def main():
