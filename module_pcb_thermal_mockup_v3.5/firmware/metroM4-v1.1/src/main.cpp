@@ -1,11 +1,11 @@
+
 #include <Arduino.h>
-// For some reason the compiler needs Command in a header file :|
 #include "command.h"
 
 // Pin Assignments
 #define PIN_CLK 2   //Yellow
-#define PIN_DIN 1   //Green
-#define PIN_DOUT 0  //Blue
+#define PIN_DIN 11   //Green
+#define PIN_DOUT 12  //Blue
 #define PIN_RDYB 5  //Purple
 #define PIN_CSB 3   //White
 #define PIN_RSTB 4  //Orange
