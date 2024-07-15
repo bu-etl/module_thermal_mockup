@@ -4,8 +4,8 @@
 
 // Pin Assignments
 #define PIN_CLK 2   //Yellow
-#define PIN_DIN 1   //Green
-#define PIN_DOUT 0  //Blue
+#define PIN_DIN 11   //Green
+#define PIN_DOUT 12  //Blue
 #define PIN_RDYB 5  //Purple
 #define PIN_CSB 3   //White
 #define PIN_RSTB 4  //Orange
@@ -155,16 +155,22 @@ void writeSPI(uint8_t data) {
   }
 }
 
-unsigned long readSPI(uint8_t size_bits) {
-  unsigned long value = 0;
+uint64_t readSPI(uint8_t size_bits) {
+  uint64_t value = 0;
   for (int i = size_bits - 1; i >= 0; i--) {
-    if (digitalRead(PIN_DOUT)) {
-      value |= (1 << i);
+    uint8_t bit = digitalRead(PIN_DOUT);
+    //Serial.println("bit " + String(i) + ": " + String(bit));
+    if (bit) {
+      value |= ((uint64_t)1 << i); 
+      //Serial.print("value: ");
+      //Serial.print((unsigned long)(value >> 32), HEX);  
+      //Serial.println((unsigned long)value, HEX);         
     }
     clk();
   }
   return value;
 }
+
 
 void chipSelect(uint8_t pin) {
   for (uint8_t i = 0; i < 4; i++) {
