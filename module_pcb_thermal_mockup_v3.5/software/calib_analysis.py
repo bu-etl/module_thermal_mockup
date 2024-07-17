@@ -42,7 +42,6 @@ temps_to_append = [
     -8.5,   # Temperature for '2024-07-12T16:54:43'
 ]
 
-# Example usage
 input_file = 'parsed_calibration-data-2024-07-12_14-49-05.csv'
 output_file = 'time_calibration-data-2024-07-12_14-49-05.csv'
 find_closest_rows_per_channel(input_file, dates_to_search, temps_to_append, output_file)
