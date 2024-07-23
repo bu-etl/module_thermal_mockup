@@ -102,6 +102,7 @@ const String allTM = "abcd";
 /* ----------------------------------------------------- 
   Parsing Functions
 ----------------------------------------------------- */
+// Convert a two character hex string to a byte Ex: "FF" -> 255
 unsigned char hex2char(String s) {
   if (s.length() < 2) {
     Serial.println(F("ERROR: Bad Hex conversion, must be two characters."));
@@ -184,25 +185,27 @@ void clk() {
 }
 
 void chip_select(byte addr) {
-  digitalWrite(PIN_SEL_0, 0x1 & addr);
-  digitalWrite(PIN_SEL_1, 0x1 & (addr>>1));
-  digitalWrite(PIN_SEL_2, 0x1 & (addr>>2));
-  digitalWrite(PIN_SEL_3, 0x1 & (addr>>3));
-  //clk();
+  digitalWrite(PIN_SEL_3, 0x1 & addr);
+  digitalWrite(PIN_SEL_2, 0x1 & (addr>>1));
+  digitalWrite(PIN_SEL_1, 0x1 & (addr>>2));
+  digitalWrite(PIN_SEL_0, 0x1 & (addr>>3));
+  delay(10);
 }
 
 void writeSPI(uint8_t data) {
+  //Serial.println("writing...");
   for (int i = 7; i >= 0; i--) {
     digitalWrite(PIN_DIN, (data & (1 << i)) ? HIGH : LOW);
     clk();
   }
 }
 
-unsigned long readSPI(uint8_t size_bits) {
-  unsigned long value = 0;
+uint64_t readSPI(uint8_t size_bits) {
+  uint64_t value = 0;
   for (int i = size_bits - 1; i >= 0; i--) {
-    if (digitalRead(PIN_DOUT)) {
-      value |= (1 << i);
+    uint8_t bit = digitalRead(PIN_DOUT);
+    if (bit) {
+      value |= ((uint64_t)1 << i);        
     }
     clk();
   }
@@ -226,6 +229,7 @@ void write_register(unsigned char addr, unsigned long value, byte size_bits) {
 unsigned long read_register(unsigned char addr, byte size_bits) {
   writeSPI(0x40 | addr); // WENB R/WB CR5 CR6 = 0x4
   digitalWrite(PIN_DIN, HIGH);
+  delay(1);
   unsigned long value = readSPI(size_bits);
 
   clk(); clk(); clk(); clk();
@@ -246,17 +250,26 @@ void rst() {
 
 void calibrate_channel(unsigned char channel_flag, String channel_name){
   Serial.println("Beginning calibration of channel " + channel_name);
-  // write_register(REG_MODE, 0b01100011, 8);
+  write_register(REG_MODE, 0b01100011, 8);
 
   write_register(REG_ADC_CONTROL, channel_flag | ADC_CONTROL_RANGE_2p56V, 8);
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
+
+  int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
     // Serial.printf("Mode A: %02x\n", mode_value);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
+    cnt++;
+    if (cnt > 25) {
+      Serial.println(F("ERROR: Unable to calibrate ADC, timeout."));
+      return;
+    }
   }
+
+  Serial.println("Zero Scale Calibration succeeded!");
 
   write_register(REG_MODE, MODE_FULL_SCALE_CALIBRATION, 8);
   while(true) {
@@ -324,6 +337,8 @@ unsigned long  readADS1118(uint16_t config) {
   Multi-Board Helper Functions
 ----------------------------------------------------- */
 int board_select(char board) {
+  digitalWrite(PIN_CS_B, HIGH);
+  digitalWrite(PIN_ENABLE_B, LOW);
   switch (board){
     case 'a':
       chip_select(TM_1_ADC); break;
@@ -338,29 +353,30 @@ int board_select(char board) {
       return -1;
       break;
   }
+  delay(10);
   return 0;
 }
 
 int probe_select(byte i) {
   switch (i){
     case 1:
-      digitalWrite(PIN_SEL_0, HIGH);
-      digitalWrite(PIN_SEL_1, LOW);
+      digitalWrite(PIN_SEL_3, HIGH);
+      digitalWrite(PIN_SEL_2, LOW);
       break;
     case 2:
-      digitalWrite(PIN_SEL_0, LOW);
-      digitalWrite(PIN_SEL_1, HIGH);
+      digitalWrite(PIN_SEL_3, LOW);
+      digitalWrite(PIN_SEL_2, HIGH);
       break;
     case 3:
-      digitalWrite(PIN_SEL_0, HIGH);
-      digitalWrite(PIN_SEL_1, HIGH);
+      digitalWrite(PIN_SEL_3, HIGH);
+      digitalWrite(PIN_SEL_2, HIGH);
       break;
     default:
       Serial.println(F("ERROR: Invalid probe selected"));
       return -1;
       break;
   }
-  delayMicroseconds(10);
+  delay(320);
   return 0;
 }
 
@@ -613,12 +629,10 @@ void temp_probe(Command cmd){
       }
       float temperatureC = rawValue * 0.0625;
       Serial.println("  " + String(temperatureC) + " °C");
-      delay(500);
+      delay(1000);
     }
     Serial.println("\n");
   }
-  board_select('a');
-  delay(10);
   Serial.println(F("TEMP PROBE READ COMPLETE\n"));
 }
 
@@ -683,7 +697,7 @@ void current(Command cmd){
     if (board_select(board) == -1) continue;
     uint16_t config = ADS1118_CONFIG_OS_SINGLE | ADS1118_CONFIG_PGA_6_144 | ADS1118_CONFIG_MODE_SINGLE | ADS1118_CONFIG_DR_128SPS;
 
-    uint16_t value = readADS1118(config);
+    //uint16_t value = readADS1118(config);
     switch (board)
     {
     case 'a':
@@ -701,14 +715,45 @@ void current(Command cmd){
     default:
       break;
     }
-
-    value = readADS1118(config);
+    digitalWrite(PIN_ENABLE_B, HIGH);
+    digitalWrite(PIN_CS_B, LOW);
+    delay(10);
+    uint16_t value = readADS1118(config);
     Serial.println("TM board " + String(board) + " current Reading: 0x" + String(value, HEX));
   }
 
   Serial.println(F("CURRENT READING COMPLETE\n"));
 }
 
+void enable(Command cmd){
+  if (cmd.nargs == 0){
+    Serial.println(F("ERROR: No enable state selected."));
+    return;
+  }
+
+  String state = cmd.args[0];
+  state.toUpperCase();
+  if (state != "ON" && state != "OFF") {
+    Serial.println("ERROR: Invalid enable state selected.");
+    return;
+  }
+
+  byte control = (state == "ON") ? HIGH : LOW;
+  digitalWrite(PIN_ENABLE_B, control);
+
+
+  Serial.println(F("ENABLE COMPLETE\n"));
+}
+
+void select(Command cmd){
+  if (cmd.nargs == 0){
+    Serial.println(F("ERROR: Nothing selected."));
+    return;
+  }
+
+  chip_select(hex2char(cmd.args[0]));
+  Serial.println(F("SELECT COMPLETE\n"));
+}
 
 /* ----------------------------------------------------- 
   Setup 
@@ -728,6 +773,8 @@ CommandEntry command_table[] = {
   {"probe", temp_probe},
   {"heater", heater},
   {"current", current},
+  {"enable", enable},
+  {"select", select},
 };
 
 void setup() {
