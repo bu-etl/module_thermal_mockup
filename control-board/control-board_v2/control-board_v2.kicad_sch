@@ -3148,7 +3148,7 @@
     (property "Sheetname" "current-sensing" (at 15.621 168.1984 0)
       (effects (font (size 1.27 1.27)) (justify left bottom))
     )
-    (property "Sheetfile" "control-board_v1-p2.kicad_sch" (at 15.621 192.7356 0)
+    (property "Sheetfile" "control-board_v2-p2.kicad_sch" (at 15.621 192.7356 0)
       (effects (font (size 1.27 1.27)) (justify left top))
     )
     (instances
