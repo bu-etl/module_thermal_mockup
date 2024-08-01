@@ -2,20 +2,20 @@
 #include "command.h"
 
 // Pin Assignments
-#define PIN_DOUT 5
-#define PIN_DIN 7
-#define PIN_CLK 2
-#define PIN_CS_B 3
-#define PIN_RST_B 4
-#define PIN_ENABLE_B 6
-#define PIN_SEL_0 8
-#define PIN_SEL_1 9
-#define PIN_SEL_2 10
-#define PIN_SEL_3 11
-#define PIN_HEATER_3 12
-#define PIN_HEATER_4 13
-#define PIN_HEATER_2 18
-#define PIN_HEATER_1 19
+#define PIN_DOUT 5      // Blue
+#define PIN_DIN 7       // Green
+#define PIN_CLK 2       // Yellow
+#define PIN_CS_B 3      // White
+#define PIN_RST_B 4     // Orange
+#define PIN_ENABLE_B 6  // Purple
+#define PIN_SEL_0 8     // White (USED IN CS)
+#define PIN_SEL_1 9     // White (USED IN CS)
+#define PIN_SEL_2 10    // White (USED IN CS)
+#define PIN_SEL_3 11    // White (USED IN CS)
+#define PIN_HEATER_3 12 // Brown
+#define PIN_HEATER_4 13 // Browm
+#define PIN_HEATER_2 18 // Brown
+#define PIN_HEATER_1 19 // Brown
 
 // Bits for ADC
 #define ADC_BITS_AD7718 24
@@ -261,8 +261,8 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
   int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
-    Serial.println("Mode A: " + String(mode_value, HEX));
-    delay(1000);
+    //Serial.println("Mode A: " + String(mode_value, HEX));
+    //delay(1000);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
     cnt++;
