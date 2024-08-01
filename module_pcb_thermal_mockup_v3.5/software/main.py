@@ -11,7 +11,14 @@ from PySide6 import QtCore
 from PySide6.QtCore import Qt
 
 APP = None
-ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
+ENABLED_CHANNELS = [1, 3, 7, 8]
+
+channel_equations = {
+    1: lambda ohms: (ohms - 723.5081039009991) / 3.0341696569667955,
+    3: lambda ohms: (ohms - 740.9934812257274) / 3.6682463501270317,
+    7: lambda ohms: (ohms - 843.5650697047028) / 3.5332573008093036,
+    8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
+}
 
 
 class MainWindow(qtw.QMainWindow):
@@ -87,21 +94,21 @@ class MainWindow(qtw.QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.readback_timer = QtCore.QTimer(self)
-        self.readback_timer.interval = 100  # ms
+        self.readback_timer.interval = 1000  # ms
         self.readback_timer.timeout.connect(self.read_port)
 
         # CSV file setup
         self.csv_filename = f'calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
         with open(self.csv_filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms'])
+            writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
 
     def connect_com_port(self, port_info):
         self.disconnect_com_port()
         self.log(f"Connecting to port: {port_info.portName()}")
         self.port = QSerialPort(port_info)
- #       self.port.baudRate = QSerialPort.BaudRate.Baud9600
-        self.port.baudRate = QSerialPort.BaudRate.Baud115200
+        self.port.baudRate = QSerialPort.BaudRate.Baud9600
+        #self.port.baudRate = QSerialPort.BaudRate.Baud115200
         self.port.breakEnabled = False
         self.port.dataBits = QSerialPort.DataBits.Data8
         self.port.flowControl = QSerialPort.FlowControl.NoFlowControl
@@ -170,24 +177,38 @@ class MainWindow(qtw.QMainWindow):
                 self.log(f"WARNING: Received unexpected measurement from device, {data}")
             if self.measure_checkbox.checked:
                 self.readout_adc()
-            volts = 1.65 + (int(value, 16) / 2**23 - 1) * (1.024*1.65/1)
-            ohms = 1E3 / (3.3 / volts - 1)
+            num = int(str(value)[:-2],16)
+            print(f"Channel {channel_id}: {hex(num)}")
+            volts = 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
+            print(f"Channel {channel_id}: {volts:0.6f} V")
+            ohms = 1E3 / (5 / volts - 1)
+            print(f"Channel {channel_id}: {ohms:0.6f} Ohms")
+            
+            # Calculate temperature using the channel_equations
+            if channel_id in channel_equations:
+                temp = channel_equations[channel_id](ohms)
+                print(f"Channel {channel_id}: {temp:0.6f} °C")
+            else:
+                temp = None
+
             dt_minutes = (datetime.now() - self.run_start_time).seconds / 60
-            if ohms > self.history_chart_max:
-                self.history_chart_max = ohms
-            if ohms < self.history_chart_min:
-                self.history_chart_min = ohms
+            dt_minutes = (datetime.now() - self.run_start_time).seconds / 60
+
+            if temp > self.history_chart_max:
+                self.history_chart_max = temp
+            if temp < self.history_chart_min:
+                self.history_chart_min = temp
             self.measurement_counter[channel_id] += 1
             idx = self.measurement_counter[channel_id]
-            self.measurement_data[channel_id].append((dt_minutes, ohms))
-            self.history_chart_series[channel_id].append(dt_minutes, ohms)
-            delta = ohms - self.measurement_data[channel_id][0][1]
-            self.value_displays[channel_id].text = f"Ch {channel_id}: {ohms:0.6f} {delta:0.6f} ADC READING: {value}"
+            self.measurement_data[channel_id].append((dt_minutes, temp))
+            self.history_chart_series[channel_id].append(dt_minutes, temp)
+            delta = temp - self.measurement_data[channel_id][0][1]
+            self.value_displays[channel_id].text = f"Ch {channel_id}: {temp:0.6f} {delta:0.6f} ADC READING: {value}"
 
             # Append data to CSV file
             with open(self.csv_filename, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms])
+                writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms, temp])
 
             n_points = 300
             if idx > n_points:
@@ -198,8 +219,9 @@ class MainWindow(qtw.QMainWindow):
             y_range = self.history_chart_max - self.history_chart_min
             # self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(self.history_chart_min - y_range*0.1,
             #                                                              self.history_chart_max + y_range*0.1)
-            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(700,
-                                                                         900)
+            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(20,
+                                                                         80)
+
 
     def start_calibrate(self):
         self.write_port('calibrate')

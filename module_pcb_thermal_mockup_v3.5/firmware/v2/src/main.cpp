@@ -111,6 +111,7 @@ unsigned char hex2char(String s) {
   return out;
 }
 
+// Ex: "command arg1 arg2 arg3" -> Command{cmd="command", nargs=3, args=["arg1", "arg2", "arg3"]}
 Command parse_command(String line) {
   Command command;
   command.nargs = 0;
