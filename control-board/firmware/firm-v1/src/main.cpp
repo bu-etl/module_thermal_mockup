@@ -232,6 +232,7 @@ unsigned long read_register(unsigned char addr, byte size_bits) {
   delay(1);
   unsigned long value = readSPI(size_bits);
 
+  delay(1);
   clk(); clk(); clk(); clk();
   clk(); clk(); clk(); clk();
   delay(10);
@@ -256,27 +257,34 @@ void calibrate_channel(unsigned char channel_flag, String channel_name){
 
   write_register(REG_MODE, MODE_ZERO_SCALE_CALIBRATION, 8);
 
+  //delay(10);
   int cnt = 0;
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
-    // Serial.printf("Mode A: %02x\n", mode_value);
+    Serial.println("Mode A: " + String(mode_value, HEX));
+    delay(1000);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
     cnt++;
     if (cnt > 25) {
-      Serial.println(F("ERROR: Unable to calibrate ADC, timeout."));
+      Serial.println(F("ERROR: Unable to zero calibrate ADC, timeout."));
       return;
     }
   }
 
   Serial.println("Zero Scale Calibration succeeded!");
 
+  cnt = 0;
   write_register(REG_MODE, MODE_FULL_SCALE_CALIBRATION, 8);
   while(true) {
     unsigned long mode_value = read_register(REG_MODE, 8);
     // Serial.printf("Mode B: %02x\n", mode_value);
     if ((mode_value & 0x7) == MODE_IDLE) break;
     delay(10);
+    if (cnt > 25) {
+      Serial.println(F("ERROR: Unable to full scale calibrate ADC, timeout."));
+      return;
+    }
   }
 
   Serial.println(F("Calibration succeeded!"));
@@ -312,19 +320,35 @@ unsigned long read_channel(unsigned char channel_id) {
 /* ----------------------------------------------------- 
   ADC ADS1118 Functions
 ----------------------------------------------------- */
-unsigned long  readADS1118(uint16_t config) {
-  
+unsigned long  readADS1118(uint8_t channel) {
   digitalWrite(PIN_ENABLE_B, HIGH);
   digitalWrite(PIN_CS_B, LOW);
+
+  uint16_t config = 0x8583; // Default configuration for single-ended input, continuous conversion, etc.
+
+  switch (channel) {
+    case 0:
+      config |= (0x4 << 12); // AIN0 to GND
+      break;
+    case 1:
+      config |= (0x5 << 12); // AIN1 to GND
+      break;
+    case 2:
+      config |= (0x6 << 12); // AIN2 to GND
+      break;
+    case 3:
+      config |= (0x7 << 12); // AIN3 to GND
+      break;
+    default:
+      Serial.println("Invalid channel");
+      return -1;
+  }
 
   writeSPI(config >> 8);
   writeSPI(config & 0xFF);
 
-  digitalWrite(PIN_CS_B, HIGH);
-  delay(10);  
-  digitalWrite(PIN_CS_B, LOW);
-
-  unsigned long result = readSPI(16);
+  delay(10); 
+  uint16_t result = readSPI(16);
 
   digitalWrite(PIN_CS_B, HIGH);
   digitalWrite(PIN_ENABLE_B, LOW);
@@ -695,30 +719,26 @@ void current(Command cmd){
 
     // skip itteration if invalid board
     if (board_select(board) == -1) continue;
-    uint16_t config = ADS1118_CONFIG_OS_SINGLE | ADS1118_CONFIG_PGA_6_144 | ADS1118_CONFIG_MODE_SINGLE | ADS1118_CONFIG_DR_128SPS;
 
-    //uint16_t value = readADS1118(config);
+    uint16_t value = 0xFFFF;
     switch (board)
     {
     case 'a':
-      config |= ADS1118_CONFIG_MUX_AIN0;
+      value = readADS1118(0);
       break;
     case 'b':
-      config |= ADS1118_CONFIG_MUX_AIN1;
+      value = readADS1118(1);
       break;
     case 'c':
-      config |= ADS1118_CONFIG_MUX_AIN2;
+      value = readADS1118(2);
       break;
     case 'd':
-      config |= ADS1118_CONFIG_MUX_AIN3;
+      value = readADS1118(3);
       break;
     default:
       break;
     }
-    digitalWrite(PIN_ENABLE_B, HIGH);
-    digitalWrite(PIN_CS_B, LOW);
     delay(10);
-    uint16_t value = readADS1118(config);
     Serial.println("TM board " + String(board) + " current Reading: 0x" + String(value, HEX));
   }
 

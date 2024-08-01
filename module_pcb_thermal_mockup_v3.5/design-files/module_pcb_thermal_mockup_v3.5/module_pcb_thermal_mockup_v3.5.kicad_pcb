@@ -34,7 +34,7 @@
     (stackup
       (layer "F.SilkS" (type "Top Silk Screen") (color "White"))
       (layer "F.Paste" (type "Top Solder Paste"))
-      (layer "F.Mask" (type "Top Solder Mask") (color "Purple") (thickness 0.0254))
+      (layer "F.Mask" (type "Top Solder Mask") (color "Green") (thickness 0.0254))
       (layer "F.Cu" (type "copper") (thickness 0.0432))
       (layer "dielectric 1" (type "prepreg") (thickness 0.0202) (material "FR4") (epsilon_r 4.5) (loss_tangent 0.02))
       (layer "In1.Cu" (type "copper") (thickness 0.0175))
@@ -42,7 +42,7 @@
       (layer "In2.Cu" (type "copper") (thickness 0.0175))
       (layer "dielectric 3" (type "prepreg") (thickness 0.0202) (material "FR4") (epsilon_r 4.5) (loss_tangent 0.02))
       (layer "B.Cu" (type "copper") (thickness 0.0432))
-      (layer "B.Mask" (type "Bottom Solder Mask") (color "Purple") (thickness 0.0254))
+      (layer "B.Mask" (type "Bottom Solder Mask") (color "Green") (thickness 0.0254))
       (layer "B.Paste" (type "Bottom Solder Paste"))
       (layer "B.SilkS" (type "Bottom Silk Screen") (color "White"))
       (copper_finish "None")
@@ -6060,7 +6060,17 @@
       (net 16 "Net-(U5-XTAL2)") (pinfunction "1") (pintype "passive") (tstamp beb9aa54-dcd8-4adc-8767-8e9bc2420784))
     (pad "2" smd rect (at -1.25 0 270) (size 1 1.8) (layers "B.Cu" "B.Paste" "B.Mask")
       (net 15 "Net-(U5-XTAL1)") (pinfunction "2") (pintype "passive") (tstamp b3cee6cf-4e12-4a6b-9495-405083695bae))
-    (model "${KICAD6_3DMODEL_DIR}/Crystal.3dshapes/Crystal_SMD_3215-2Pin_3.2x1.5mm.wrl"
+    (model "${KICAD6_3DMODEL_DIR}/Crystal.3dshapes/Crystal_SMD_3215-2Pin_3.2x1.5mm.wrl" hide
+      (offset (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model "/Users/naomi_12/Documents/KiCad/7.0/3dmodels/Crystal_SMD_3215-2pin_3.2x1.5mm.kicad_mod" hide
+      (offset (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
+    (model "/Users/naomi_12/Documents/KiCad/7.0/3dmodels/Crystal-SMD-3215-Pin2.wrl"
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
