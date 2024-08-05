@@ -8,6 +8,12 @@ from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 from datetime import datetime
 
+def create_all(engine) -> None:
+    """
+    Creates all databse tables and relationships
+    """
+    Base.metadata.create_all(engine)
+
 class Base(DeclarativeBase):
     pass
 
