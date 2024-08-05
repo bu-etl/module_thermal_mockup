@@ -8,11 +8,13 @@ import PySide6.QtWidgets as qtw
 import PySide6.QtCharts as qtc
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6 import QtCore
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QCommandLineOption, QCommandLineParser
+from sqlalchemy import create_engine
+import env
 
 APP = None
 ENABLED_CHANNELS = [1, 3, 7, 8]
-
+DATA_STORE = ['LOCAL', 'DB']
 channel_equations = {
     1: lambda ohms: (ohms - 723.5081039009991) / 3.0341696569667955,
     3: lambda ohms: (ohms - 740.9934812257274) / 3.6682463501270317,
@@ -20,11 +22,35 @@ channel_equations = {
     8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
 
+def parse(app):
+    """Parse the arguments and options of the given app object."""
+    parser = QCommandLineParser()
+    parser.addHelpOption()
+    data_store_option = QCommandLineOption(
+        ["s", "send"],
+        "Required: Send file to a supported location: " + ', '.join(DATA_STORE),
+    )
+    module_name = QCommandLineOption(
+        ['m', 'module'],
+        "Unique name of the tested module"
+    )
+    parser.addOption(data_store_option)
+    parser.addOption(module_name)
+    parser.process(app)
+    if parser.isSet(data_store_option) and parser.isSet(module_name):
+       return parser
+    else:
+        parser.showHelp()
+
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Howdy Doody")
+        
+        #get parsed arguments
+        self.module_name = None
+        self.data_store = None
 
         self.measurement_data = {i: [] for i in ENABLED_CHANNELS}
         self.measurement_counter = {i: 0 for i in ENABLED_CHANNELS}
@@ -96,12 +122,6 @@ class MainWindow(qtw.QMainWindow):
         self.readback_timer = QtCore.QTimer(self)
         self.readback_timer.interval = 1000  # ms
         self.readback_timer.timeout.connect(self.read_port)
-
-        # CSV file setup
-        self.csv_filename = f'calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-        with open(self.csv_filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
 
     def connect_com_port(self, port_info):
         self.disconnect_com_port()
@@ -206,9 +226,11 @@ class MainWindow(qtw.QMainWindow):
             self.value_displays[channel_id].text = f"Ch {channel_id}: {temp:0.6f} {delta:0.6f} ADC READING: {value}"
 
             # Append data to CSV file
-            with open(self.csv_filename, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms, temp])
+            #self.save_data()
+
+            # with open(self.csv_filename, 'a', newline='') as csvfile:
+            #     writer = csv.writer(csvfile)
+            #     writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms, temp])
 
             n_points = 300
             if idx > n_points:
@@ -221,8 +243,6 @@ class MainWindow(qtw.QMainWindow):
             #                                                              self.history_chart_max + y_range*0.1)
             self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(20,
                                                                          80)
-
-
     def start_calibrate(self):
         self.write_port('calibrate')
 
@@ -240,18 +260,41 @@ class MainWindow(qtw.QMainWindow):
     def readout_ref(self):
         self.write_port('probe 1 2 3')
 
+    def save_data(self, data_store: str, data: dict):
+        if data_store == 'LOCAL':
+            #if csv file has not been made, create it
+            if not hasattr(self, "csv_filename"):
+                self.csv_filename = f'{module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+                with open(self.csv_filename, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
+            #write the row in
+            with open(self.csv_filename, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow( [datetime.now().isoformat(), data["channel_id"], f"0x{data["value"]}", data["volts"], data["ohms"], data["temp"]] )
+        elif data_store == 'DB':
+            engine = create_engine(
+                getattr(env, "DATABASE_URI"), 
+                echo=True
+            )
+        else:
+            raise NotImplementedError(f"Sorry this form of data storing is not supported: {data_store}")
 
 def main():
     global PORT, APP
-    APP = qtw.QApplication()
-    window = MainWindow()
-    window.resize(800, 600)
-    window.show()
+    APP = qtw.QApplication(sys.argv)
+    arg_parser = parse(APP)
+
     # port_selection = SerialPopup.get_port_selection()
     # if port_selection is None:
     # print(port_selection)
-    sys.exit(APP.exec())
-
+    if arg_parser is not None:
+        print(arg_parser.value('module'))
+        print(arg_parser.value('send'))
+        window = MainWindow()
+        window.resize(800, 600)
+        window.show()
+        sys.exit(APP.exec())
 
 if __name__ == "__main__":
     main()
