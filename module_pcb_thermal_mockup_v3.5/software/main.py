@@ -11,7 +11,7 @@ from PySide6 import QtCore
 from PySide6.QtCore import Qt, QCommandLineOption, QCommandLineParser
 from sqlalchemy import create_engine
 import env
-
+import argparse
 APP = None
 ENABLED_CHANNELS = [1, 3, 7, 8]
 DATA_STORE = ['LOCAL', 'DB']
@@ -22,35 +22,35 @@ channel_equations = {
     8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
 
-def parse(app):
-    """Parse the arguments and options of the given app object."""
-    parser = QCommandLineParser()
-    parser.addHelpOption()
-    data_store_option = QCommandLineOption(
-        ["s", "send"],
-        "Required: Send file to a supported location: " + ', '.join(DATA_STORE),
-    )
-    module_name = QCommandLineOption(
-        ['m', 'module'],
-        "Unique name of the tested module"
-    )
-    parser.addOption(data_store_option)
-    parser.addOption(module_name)
-    parser.process(app)
-    if parser.isSet(data_store_option) and parser.isSet(module_name):
-       return parser
-    else:
-        parser.showHelp()
+# def parse(app):
+#     """Parse the arguments and options of the given app object."""
+#     parser = QCommandLineParser()
+#     parser.addHelpOption()
+#     data_store_option = QCommandLineOption(
+#         ["s", "send"],
+#         "Required: Send file to a supported location: " + ', '.join(DATA_STORE),
+#     )
+#     module_name = QCommandLineOption(
+#         ['m', 'module'],
+#         "Unique name of the tested module"
+#     )
+#     parser.addOption(data_store_option)
+#     parser.addOption(module_name)
+#     parser.process(app)
+#     if parser.isSet(data_store_option) and parser.isSet(module_name):
+#        return parser
+#     else:
+#         parser.showHelp()
 
 
 class MainWindow(qtw.QMainWindow):
-    def __init__(self):
+    def __init__(self, args):
         super().__init__()
         self.setWindowTitle("Howdy Doody")
         
         #get parsed arguments
-        self.module_name = None
-        self.data_store = None
+        self.module_name = args.module
+        self.data_store = args.data_store
 
         self.measurement_data = {i: [] for i in ENABLED_CHANNELS}
         self.measurement_counter = {i: 0 for i in ENABLED_CHANNELS}
@@ -264,7 +264,7 @@ class MainWindow(qtw.QMainWindow):
         if data_store == 'LOCAL':
             #if csv file has not been made, create it
             if not hasattr(self, "csv_filename"):
-                self.csv_filename = f'{module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+                self.csv_filename = f'{self.module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
                 with open(self.csv_filename, 'w', newline='') as csvfile:
                     writer = csv.writer(csvfile)
                     writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
@@ -273,28 +273,36 @@ class MainWindow(qtw.QMainWindow):
                 writer = csv.writer(csvfile)
                 writer.writerow( [datetime.now().isoformat(), data["channel_id"], f"0x{data["value"]}", data["volts"], data["ohms"], data["temp"]] )
         elif data_store == 'DB':
-            engine = create_engine(
-                getattr(env, "DATABASE_URI"), 
-                echo=True
-            )
+            if not hasattr(self, 'engine'):
+                self.engine = create_engine(
+                    getattr(env, "DATABASE_URI"), 
+                    echo=True
+                )
+            
         else:
             raise NotImplementedError(f"Sorry this form of data storing is not supported: {data_store}")
 
 def main():
     global PORT, APP
-    APP = qtw.QApplication(sys.argv)
-    arg_parser = parse(APP)
+
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('-m','--module', action='store', required=True, help='Module that is being calibrated')
+    argParser.add_argument('-ds','--data_store', action='store', choices=DATA_STORE, required=True, help=f'Select where to store data')
+    args = argParser.parse_args()
+    print(type(args))
+    APP = qtw.QApplication()
+    #arg_parser = parse(APP)
 
     # port_selection = SerialPopup.get_port_selection()
     # if port_selection is None:
     # print(port_selection)
-    if arg_parser is not None:
-        print(arg_parser.value('module'))
-        print(arg_parser.value('send'))
-        window = MainWindow()
-        window.resize(800, 600)
-        window.show()
-        sys.exit(APP.exec())
+    # if arg_parser is not None:
+    #     print(arg_parser.value('module'))
+    #     print(arg_parser.value('send'))
+    window = MainWindow(args)
+    window.resize(800, 600)
+    window.show()
+    sys.exit(APP.exec())
 
 if __name__ == "__main__":
     main()
