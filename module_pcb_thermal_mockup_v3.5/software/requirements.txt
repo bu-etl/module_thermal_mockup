@@ -1,3 +1,4 @@
-numpy
-matplotlib
-pyside6
+numpy~=2
+matplotlib~=3
+pyside6~=6
+sqlalchemy~=2

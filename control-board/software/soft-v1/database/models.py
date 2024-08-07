@@ -21,7 +21,6 @@ class ControlBoard(Base):
     __tablename__ = "control_board"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-
     modules: Mapped[List["Module"]] = relationship(back_populates="control_board")
 
     def __repr__(self) -> str:
@@ -32,8 +31,8 @@ class Module(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     position_on_D: Mapped[str] = mapped_column(String(50), nullable=True, unique=True)
-    control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"))
-    control_board_pos: Mapped[str] = mapped_column(String(1))
+    control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"), nullable=True)
+    control_board_pos: Mapped[str] = mapped_column(String(1), nullable=True)
 
     control_board: Mapped["ControlBoard"] = relationship(back_populates="modules")
     data: Mapped[List["Data"]] = relationship(back_populates="module")
@@ -48,11 +47,11 @@ class Data(Base):
     sensor: Mapped[str] = mapped_column(String(50))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     raw_adc: Mapped[str] = mapped_column(String(50))
-    voltage: Mapped[float] = mapped_column(Float) #volts
-    resistance: Mapped[float] = mapped_column(Float) #ohms
-    temperature: Mapped[float] = mapped_column(Float) #celcius
+    volts: Mapped[float] = mapped_column(Float)
+    ohms: Mapped[float] = mapped_column(Float) 
+    celcius: Mapped[float] = mapped_column(Float) 
 
     module: Mapped["Module"] = relationship(back_populates="data")
 
     def __repr__(self) -> str:
-        return f"Data(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, timestamp={self.timestamp!r}, raw_adc={self.raw_adc!r}, voltage={self.voltage!r}, resistance={self.resistance!r}, temperature={self.temperature!r})"
+        return f"Data(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, timestamp={self.timestamp!r}, raw_adc={self.raw_adc!r}, voltage={self.volts!r}, resistance={self.ohms!r}, temperature={self.celcius!r})"
