@@ -475,6 +475,10 @@
     [
       "15283108-c1a6-41c9-9499-37f0829bd5f1",
       "current-sensing"
+    ],
+    [
+      "df0d4b1a-db78-4fe6-a369-540e64b9a533",
+      "Test-v1"
     ]
   ],
   "text_variables": {}

@@ -5824,6 +5824,23 @@
     )
   )
 
+  (sheet (at 56.134 169.037) (size 34.925 23.495) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid df0d4b1a-db78-4fe6-a369-540e64b9a533)
+    (property "Sheetname" "Test-v1" (at 56.134 168.3254 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "Test-v1.kicad_sch" (at 56.134 193.1166 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "control-board_v1"
+        (path "/5ea0e920-d127-456d-9ad4-df9bbc649b9b" (page "3"))
+      )
+    )
+  )
+
   (sheet_instances
     (path "/" (page "1"))
   )
