@@ -7,6 +7,8 @@ val = getattr(env, "DATABASE_URI")
 
 engine = create_engine(val, echo=True)
 
-print("hello world")
+# from database.models import create_all
 
- 
+# create_all(engine)
+
+print("hello world")

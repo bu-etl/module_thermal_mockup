@@ -9,10 +9,15 @@ import PySide6.QtCharts as qtc
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session
+import env
+import argparse
+import data_models as dm
 
 APP = None
 ENABLED_CHANNELS = [1, 3, 7, 8]
-
+DATA_STORE = ['LOCAL', 'DB']
 channel_equations = {
     1: lambda ohms: (ohms - 723.5081039009991) / 3.0341696569667955,
     3: lambda ohms: (ohms - 740.9934812257274) / 3.6682463501270317,
@@ -20,17 +25,32 @@ channel_equations = {
     8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
 
+channel_sensor_map = {
+    1: 'E3',
+    2: 'L1',
+    3: 'E1',
+    4: 'L2',
+    5: 'E2',
+    6: 'L3',
+    7: 'L4',
+    8: 'E4'
+}
 
 class MainWindow(qtw.QMainWindow):
-    def __init__(self):
+    def __init__(self, args: argparse.Namespace):
         super().__init__()
         self.setWindowTitle("Howdy Doody")
+        
+        #get parsed arguments
+        self.module_name = args.module
+        self.data_store = args.data_store
 
         self.measurement_data = {i: [] for i in ENABLED_CHANNELS}
         self.measurement_counter = {i: 0 for i in ENABLED_CHANNELS}
         self.measurements_pending = set()
         self.run_start_time = None
 
+        #--------GUI LAYOUT-------------#
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu('File')
         self.connect_menu = self.menu.addMenu('Connect')
@@ -64,6 +84,7 @@ class MainWindow(qtw.QMainWindow):
         main_layout.addWidget(self.measure_button)
         main_layout.addWidget(self.measure_checkbox)
 
+        #------PLOT------#
         self.history_chart_view = qtc.QChartView()
         self.history_chart = qtc.QChart()
         self.history_chart_min = 10
@@ -96,12 +117,6 @@ class MainWindow(qtw.QMainWindow):
         self.readback_timer = QtCore.QTimer(self)
         self.readback_timer.interval = 1000  # ms
         self.readback_timer.timeout.connect(self.read_port)
-
-        # CSV file setup
-        self.csv_filename = f'calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-        with open(self.csv_filename, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
 
     def connect_com_port(self, port_info):
         self.disconnect_com_port()
@@ -205,10 +220,14 @@ class MainWindow(qtw.QMainWindow):
             delta = temp - self.measurement_data[channel_id][0][1]
             self.value_displays[channel_id].text = f"Ch {channel_id}: {temp:0.6f} {delta:0.6f} ADC READING: {value}"
 
-            # Append data to CSV file
-            with open(self.csv_filename, 'a', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow([datetime.now().isoformat(), channel_id, f"0x{value}", volts, ohms, temp])
+            self.save_data({
+                'module': self.module_name,
+                'channel_id': channel_id,
+                'raw_adc': f"0x{value}",
+                'voltage': volts,
+                'resistance': ohms,
+                'temperature': temp
+            })
 
             n_points = 300
             if idx > n_points:
@@ -221,8 +240,6 @@ class MainWindow(qtw.QMainWindow):
             #                                                              self.history_chart_max + y_range*0.1)
             self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(20,
                                                                          80)
-
-
     def start_calibrate(self):
         self.write_port('calibrate')
 
@@ -240,18 +257,65 @@ class MainWindow(qtw.QMainWindow):
     def readout_ref(self):
         self.write_port('probe 1 2 3')
 
+    def save_data(self, data: dict):
+        if self.data_store == 'LOCAL':
+            #if csv file has not been made, create it
+            if not hasattr(self, "csv_filename"):
+                self.csv_filename = f'{self.module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+                with open(self.csv_filename, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
+            #insert data
+            with open(self.csv_filename, 'a', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow( [datetime.now().isoformat(), data["channel_id"], data["raw_adc"], data["voltage"], data["resistance"], data["temperature"]] )
+        
+        elif self.data_store == 'DB':
+            #if engine has not been made create it
+            if not hasattr(self, 'engine'):
+                self.engine = create_engine( getattr(env, "DATABASE_URI"), echo=True )
+
+            #insert data
+            with Session(self.engine) as session:
+                query = select(dm.Module).where(dm.Module.name == self.module_name)
+                module = session.scalars(query).one()
+
+                db_data = dm.Data(
+                    module = module,
+                    sensor = channel_sensor_map[data["channel_id"]],
+                    timestamp = datetime.now(),
+                    raw_adc = data["raw_adc"],
+                    volts = data["voltage"],
+                    ohms = data["resistance"],
+                    celcius = data["temperature"]
+                )
+                session.add(db_data)
+                session.commit()
+            
+        else:
+            raise NotImplementedError(f"Sorry this form of data storing is not supported: {self.data_store}")
 
 def main():
     global PORT, APP
+
+    argParser = argparse.ArgumentParser(description = "Argument parser")
+    argParser.add_argument('-m','--module', action='store', required=True, help='Module that is being calibrated')
+    argParser.add_argument('-ds','--data_store', action='store', choices=DATA_STORE, required=True, help=f'Select where to store data')
+    args = argParser.parse_args()
+    print(type(args))
     APP = qtw.QApplication()
-    window = MainWindow()
-    window.resize(800, 600)
-    window.show()
+    #arg_parser = parse(APP)
+
     # port_selection = SerialPopup.get_port_selection()
     # if port_selection is None:
     # print(port_selection)
+    # if arg_parser is not None:
+    #     print(arg_parser.value('module'))
+    #     print(arg_parser.value('send'))
+    window = MainWindow(args)
+    window.resize(800, 600)
+    window.show()
     sys.exit(APP.exec())
-
 
 if __name__ == "__main__":
     main()
