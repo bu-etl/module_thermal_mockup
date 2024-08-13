@@ -1,4 +1,5 @@
-numpy~=2
-matplotlib~=3
-pyside6~=6
-sqlalchemy~=2
+numpy>=2.0
+matplotlib>=3.9
+pyside6>=6.7
+sqlalchemy>=2.0
+psycopg2==2.9.9
