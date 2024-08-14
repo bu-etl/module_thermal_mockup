@@ -273,7 +273,7 @@ class MainWindow(qtw.QMainWindow):
         elif self.data_store == 'DB':
             #if engine has not been made create it
             if not hasattr(self, 'engine'):
-                self.engine = create_engine( getattr(env, "DATABASE_URI"), echo=True )
+                self.engine = create_engine( getattr(env, "DATABASE_URI"))
 
             #insert data
             with Session(self.engine) as session:

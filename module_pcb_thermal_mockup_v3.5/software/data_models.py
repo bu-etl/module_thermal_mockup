@@ -51,6 +51,7 @@ class Data(Base):
     ohms: Mapped[float] = mapped_column(Float) 
     celcius: Mapped[float] = mapped_column(Float) 
 
+    run_tag: Mapped[str] = mapped_column(String)
     module: Mapped["Module"] = relationship(back_populates="data")
 
     def __repr__(self) -> str:
