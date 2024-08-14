@@ -11,9 +11,10 @@ engine = create_engine( getattr(env, "DATABASE_URI"), echo=True )
 # dm.Base.metadata.create_all(engine)
 
 #adds module
-# with Session(engine) as session:
+#with Session(engine) as session:
 #     mod = dm.Module(
-#         name="TM0001",
+#         name="PROTO_TM_001",
 #     )
 #     session.add(mod)
 #     session.commit()
+

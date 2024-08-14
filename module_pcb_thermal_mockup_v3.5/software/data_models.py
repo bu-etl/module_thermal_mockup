@@ -51,8 +51,21 @@ class Data(Base):
     ohms: Mapped[float] = mapped_column(Float) 
     celcius: Mapped[float] = mapped_column(Float) 
 
-    run_tag: Mapped[str] = mapped_column(String)
+    run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False)
+
     module: Mapped["Module"] = relationship(back_populates="data")
+    run: Mapped["Run"] = relationship(back_populates="data")
 
     def __repr__(self) -> str:
         return f"Data(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, timestamp={self.timestamp!r}, raw_adc={self.raw_adc!r}, voltage={self.volts!r}, resistance={self.ohms!r}, temperature={self.celcius!r})"
+    
+class Run(Base):
+    __tablename__ = "run"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    mode: Mapped[str] = mapped_column(String(50), nullable=False, unique=False)
+    comment: Mapped[str] =  mapped_column(String(500), nullable=True, unique=False)
+
+    data: Mapped[List["Data"]] = relationship(back_populates="run")
+
+    def __repr__(self) -> str:
+        return f"Run(id={self.id!r}, mode={self.mode!r}), comment={self.comment!r}"
