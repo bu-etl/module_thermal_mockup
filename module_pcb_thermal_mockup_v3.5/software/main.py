@@ -9,14 +9,16 @@ import PySide6.QtCharts as qtc
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, Engine
 from sqlalchemy.orm import Session
-import env
+from env import DATABASE_URI
 import argparse
 import data_models as dm
+from typing import Literal
 
 APP = None
 ENABLED_CHANNELS = [1, 3, 7, 8]
+DB_RUN_MODES = ('TEST', 'DEBUG', 'REAL')
 DATA_STORE = ['LOCAL', 'DB']
 channel_equations = {
     1: lambda ohms: (ohms - 723.5081039009991) / 3.0341696569667955,
@@ -36,6 +38,34 @@ channel_sensor_map = {
     8: 'E4'
 }
 
+def init_db_run(engine: Engine, run_id: int|None = None, comment: str|None = None, mode: str|None = None):
+    """
+    Returns the Run row from the database for this selected run (either an old run or creates a new one dependng on the arguments)
+
+    If run_id is specified then it will just fetch that row. If comment AND mode are specifed it makes a new run.
+    """
+    if run_id is not None and comment is not None and mode is not None:
+        raise ValueError("ambiguous input, please only give run_id for having this data be apart of an old run, OR give a mode and comment for a new run.")
+    if run_id is not None:
+        query = select(dm.Run).where(dm.Run.id == run_id)
+        with Session(engine) as session:
+            run = session.execute(query).one() #or use first and raise your owne error
+            print(f'Using old run {run}')
+            return run
+    elif comment is not None and mode is not None:
+        with Session(engine) as session:
+            run = dm.Run(
+                comment = comment,
+                mode = mode
+            )
+            session.add(run)
+            session.commit()
+            print(f'Added new run to db {run}')
+            return run
+    else:
+        raise ValueError("Please give both a comment and mode for a this new run.")
+
+
 class MainWindow(qtw.QMainWindow):
     def __init__(self, args: argparse.Namespace):
         super().__init__()
@@ -45,6 +75,21 @@ class MainWindow(qtw.QMainWindow):
         self.module_name = args.module
         self.data_store = args.data_store
 
+        banner_text = ''
+        if self.data_store == 'DB':
+            self.engine = create_engine(DATABASE_URI)
+            self.data_run = init_db_run(self.engine, run_id=args.run_id, comment=args.comment, mode=args.mode)
+            banner_text = str(self.data_run)
+        elif self.data_store == 'LOCAL':
+            #if csv file has not been made, create it
+            self.csv_filename = f'{self.module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
+            with open(self.csv_filename, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
+            banner_text = f'STORING DATA LOCALLY IN CSV NAMED: {self.csv_filename}'
+        else:
+            raise NotImplementedError(f"Sorry this form of data storing is not supported: {self.data_store}")
+        
         self.measurement_data = {i: [] for i in ENABLED_CHANNELS}
         self.measurement_counter = {i: 0 for i in ENABLED_CHANNELS}
         self.measurements_pending = set()
@@ -66,6 +111,9 @@ class MainWindow(qtw.QMainWindow):
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
+        self.banner_label = qtw.QLabel(banner_text)
+        self.banner_label.setStyleSheet("background-color: #FFD700; color: #000000; padding: 10px; font-size: 16px;")
+
         self.calibrate_button = qtw.QPushButton('Calibrate')
         self.calibrate_button.clicked.connect(self.start_calibrate)
         self.reset_button = qtw.QPushButton('Reset ADC')
@@ -78,6 +126,7 @@ class MainWindow(qtw.QMainWindow):
         self.ref_button = qtw.QPushButton('Readout Temp Probes')
         self.ref_button.clicked.connect(self.readout_ref)
 
+        main_layout.addWidget(self.banner_label)
         main_layout.addWidget(self.calibrate_button)
         main_layout.addWidget(self.reset_button)
         main_layout.addWidget(self.ref_button)
@@ -259,22 +308,11 @@ class MainWindow(qtw.QMainWindow):
 
     def save_data(self, data: dict):
         if self.data_store == 'LOCAL':
-            #if csv file has not been made, create it
-            if not hasattr(self, "csv_filename"):
-                self.csv_filename = f'{self.module_name}-calibration-data-{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.csv'
-                with open(self.csv_filename, 'w', newline='') as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(['Timestamp', 'Channel', 'ADC Value', 'Volts', 'Ohms', 'Temp'])
             #insert data
             with open(self.csv_filename, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile)
                 writer.writerow( [datetime.now().isoformat(), data["channel_id"], data["raw_adc"], data["voltage"], data["resistance"], data["temperature"]] )
-        
         elif self.data_store == 'DB':
-            #if engine has not been made create it
-            if not hasattr(self, 'engine'):
-                self.engine = create_engine( getattr(env, "DATABASE_URI"))
-
             #insert data
             with Session(self.engine) as session:
                 query = select(dm.Module).where(dm.Module.name == self.module_name)
@@ -287,11 +325,11 @@ class MainWindow(qtw.QMainWindow):
                     raw_adc = data["raw_adc"],
                     volts = data["voltage"],
                     ohms = data["resistance"],
-                    celcius = data["temperature"]
+                    celcius = data["temperature"],
+                    run = self.data_run
                 )
                 session.add(db_data)
                 session.commit()
-            
         else:
             raise NotImplementedError(f"Sorry this form of data storing is not supported: {self.data_store}")
 
@@ -301,8 +339,11 @@ def main():
     argParser = argparse.ArgumentParser(description = "Argument parser")
     argParser.add_argument('-m','--module', action='store', required=True, help='Module that is being calibrated')
     argParser.add_argument('-ds','--data_store', action='store', choices=DATA_STORE, required=True, help=f'Select where to store data')
+    argParser.add_argument('-r','--run_id', action='store', help=f'Database ID of a previous run that you would like this run to be apart of')
+    argParser.add_argument('-c', '--comment', action='store', help=f'A comment or description of the new run, only used for new runs')
+    argParser.add_argument('-mode', action='store', choices=DB_RUN_MODES)
     args = argParser.parse_args()
-    print(type(args))
+
     APP = qtw.QApplication()
     #arg_parser = parse(APP)
 
