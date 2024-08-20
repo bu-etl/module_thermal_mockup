@@ -15,6 +15,7 @@ from env import DATABASE_URI
 import argparse
 import data_models as dm
 from typing import Literal
+from functools import partial
 
 APP = None
 ENABLED_CHANNELS = [1, 3, 8]
@@ -106,8 +107,9 @@ class MainWindow(qtw.QMainWindow):
         self.port = None
         self.port_infos = QSerialPortInfo.availablePorts()
         for port_info in self.port_infos:
-            self.connect_menu.addAction(port_info.portName(), lambda: self.connect_com_port(port_info))
-
+            #https://stackoverflow.com/questions/15331726/how-does-functools-partial-do-what-it-does 
+            self.connect_menu.addAction(port_info.portName(), partial(self.connect_com_port, port_info)) #partial returns connect_com_port but with the port_info inserted!
+            
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
@@ -256,7 +258,6 @@ class MainWindow(qtw.QMainWindow):
                 temp = None
 
             dt_minutes = (datetime.now() - self.run_start_time).seconds / 60
-            dt_minutes = (datetime.now() - self.run_start_time).seconds / 60
 
             if temp > self.history_chart_max:
                 self.history_chart_max = temp
@@ -278,7 +279,7 @@ class MainWindow(qtw.QMainWindow):
                 'temperature': temp
             })
 
-            n_points = 300
+            n_points = 3000
             if idx > n_points:
                 self.history_chart_series[channel_id].remove(0)
                 self.measurement_data[channel_id].pop(0)
@@ -287,8 +288,8 @@ class MainWindow(qtw.QMainWindow):
             y_range = self.history_chart_max - self.history_chart_min
             # self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(self.history_chart_min - y_range*0.1,
             #                                                              self.history_chart_max + y_range*0.1)
-            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(20,
-                                                                         80)
+            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(-30,
+                                                                         -8)
     def start_calibrate(self):
         self.write_port('calibrate')
 
@@ -316,7 +317,6 @@ class MainWindow(qtw.QMainWindow):
             #insert data
             query = select(dm.Module).where(dm.Module.name == self.module_name)
             module = self.session.scalars(query).one()
-            print(self.data_run)
             db_data = dm.Data(
                 module = module,
                 sensor = channel_sensor_map[data["channel_id"]],
@@ -327,7 +327,6 @@ class MainWindow(qtw.QMainWindow):
                 celcius = data["temperature"],
                 run = self.data_run
             )
-            print('OK??')
             self.session.add(db_data)
             self.session.commit()
         else:
