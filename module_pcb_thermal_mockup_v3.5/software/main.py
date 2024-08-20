@@ -151,6 +151,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.history_chart.createDefaultAxes()
 
+        #------PLOT WIDGET FINISHED-------#
         main_layout.addWidget(self.history_chart_view)
 
         self.value_displays = {}
@@ -279,17 +280,16 @@ class MainWindow(qtw.QMainWindow):
                 'temperature': temp
             })
 
-            n_points = 3000
+            n_points = 800
             if idx > n_points:
                 self.history_chart_series[channel_id].remove(0)
                 self.measurement_data[channel_id].pop(0)
             self.history_chart.axes(Qt.Orientation.Horizontal)[0].setRange(self.measurement_data[channel_id][0][0],
                                                                            self.measurement_data[channel_id][-1][0])
             y_range = self.history_chart_max - self.history_chart_min
-            # self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(self.history_chart_min - y_range*0.1,
-            #                                                              self.history_chart_max + y_range*0.1)
-            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(-30,
-                                                                         -8)
+            self.history_chart.axes(Qt.Orientation.Vertical)[0].setRange(self.history_chart_min - y_range*0.1,
+                                                                         self.history_chart_max + y_range*0.1)
+
     def start_calibrate(self):
         self.write_port('calibrate')
 
