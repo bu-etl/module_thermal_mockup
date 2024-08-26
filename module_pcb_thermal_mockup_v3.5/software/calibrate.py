@@ -40,11 +40,12 @@ class CommPort(qtw.QComboBox):
         for port_info in QSerialPortInfo.availablePorts():
             self.addItem(port_info.portName(), port_info)
 
-        #if the dropdown index changes
+        #The Signal of a QComboBox - if current index change 
         self.currentIndexChanged.connect(self.select_port) 
 
+    @Slot() #can be made type safe 
     def select_port(self):
-        ''' Signal for when a port is selected from the dropdown'''
+        ''' Slot for when a port is selected from the dropdown'''
         index = self.currentIndex()
         if index > 0:  # Ignoring the first 'Select Port' line
             port_info = self.itemData(index)
@@ -64,12 +65,15 @@ class CommPort(qtw.QComboBox):
         self.port.parity = QSerialPort.Parity.NoParity
         self.port.stopBits = QSerialPort.StopBits.OneStop
         if not self.port.open(QIODevice.ReadWrite):
-            print("Failed to open port!")
             self.port = None
+            self.log(f"Failed to open port: {port.portName()}")
             return
         self.port.clear()
+        self.log(f"Successfully connected to: {port.portName()}")
         # self.port._error_handler = self.port.errorOccurred.connect(self.log_port_error)
 
+    #make this a signal of CoommPort, reading when read it triggers data to be sent to sensors 
+    # -> in mainwindow self.CommPort.read.connect(self.ETROC1.whatever) In there you gotta decide if that is data you want
     def read(self) -> None:
         if self.port is None:
             return
@@ -81,16 +85,17 @@ class CommPort(qtw.QComboBox):
         if self.port is None:
             return
         self.com_port.write(message.encode() + b'\n')
-
+    
     def disconnect_port(self):
         if self.port is not None:
-            if hasattr(self.port, '_error_handler'):
-                self.port.errorOccurred.disconnect(self.port._error_handler)
+            # if hasattr(self.port, '_error_handler'):
+            #     self.port.errorOccurred.disconnect(self.port._error_handler)
             self.port.close()
             self.port = None
 
     def log(self, message):
         ''' Emit log messages via signal '''
+        #when a signal is emitted, any widget connected to it triggers
         self.log_message.emit(message)
 
 # #Widget for live readout graph (Not DB Saved)
@@ -135,16 +140,15 @@ class MainWindow(qtw.QMainWindow):
         self.setWindowTitle("Module Calibration") 
 
         self.menu = self.menuBar()
-        self.connect_menu = self.menu.addMenu('Connect')
-
+        exit_action = self.menu.addAction('Exit', self._close)
+        exit_action.setShortcut('Ctrl+Q')
+        self.menu.addAction(exit_action)
+        self.setMenuBar(self.menu)
+        
         self.comm_port= CommPort()
-        # - What an action is
-        #https://www.pythonguis.com/tutorials/pyside6-actions-toolbars-menus/
-        # - What QWidgetAction is
-        #https://doc.qt.io/qt-6/qwidgetaction.html
-        port_widget_action = qtw.QWidgetAction(self)
-        port_widget_action.setDefaultWidget(self.comm_port) #set the action for this widget
-        self.connect_menu.addAction(port_widget_action)
+        self.tool_bar = qtw.QToolBar()
+        self.tool_bar.addWidget(self.comm_port)
+        self.addToolBar(self.tool_bar)
 
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
@@ -152,19 +156,24 @@ class MainWindow(qtw.QMainWindow):
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
-
         self.setCentralWidget(central_widget)
 
         self.comm_port.log_message[str].connect(self.log)
+
         # layout.addWidget(SubassemblyPlot('Subassembly 1'), 0,0)
         # layout.addWidget(SubassemblyPlot('Subassembly 2'), 0,1)
         # layout.addWidget(SubassemblyPlot('Subassembly 3'), 1,0)
         # layout.addWidget(SubassemblyPlot('Subassembly 4'), 1,1)
-
         
     @Slot(str)
     def log(self, text: str):
         self.serial_display.appendPlainText(text)
+
+    @Slot()
+    def _close(self):
+        self.comm_port.disconnect_port()
+        self.close()
+    
 
 def main():
     APP = qtw.QApplication()
