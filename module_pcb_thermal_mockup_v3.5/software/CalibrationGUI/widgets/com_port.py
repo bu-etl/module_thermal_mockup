@@ -37,7 +37,6 @@ class ComPort(qtw.QComboBox):
 
     def connect_port(self, port: QSerialPortInfo) -> None:
         """Connects and sets port to the corresponding port info"""
-        print(type(port))
         self.disconnect_port() #if already connected to another port, disconnect
         self.log(f"Connecting to port: {port.portName()}")
         self.port = QSerialPort(port)
@@ -68,9 +67,8 @@ class ComPort(qtw.QComboBox):
         return data
     
     def write(self, message: str) -> None:
-        if self.port is None:
-            return
-        self.port.write(message.encode() + b'\n')
+        if self.port is not None:
+            self.port.write(message.encode() + b'\n')
     
     def disconnect_port(self) -> None:
         if self.port is not None:

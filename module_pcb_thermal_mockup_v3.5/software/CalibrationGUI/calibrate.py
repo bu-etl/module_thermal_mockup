@@ -1,6 +1,6 @@
 import sys
 import PySide6.QtWidgets as qtw
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtCore import Signal, Slot, QTimer
 from PySide6.QtGui import QAction
 from sqlalchemy import create_engine, select, Engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
@@ -10,6 +10,8 @@ from typing import Literal
 from functools import partial
 import pyqtgraph as pg
 from widgets.com_port import ComPort
+import re
+import time
 
 ENABLED_CHANNELS = [1, 3, 8]
 DB_RUN_MODES = ('CALIBRATE')
@@ -25,42 +27,61 @@ channel_sensor_map = {
     7: 'L4',
     8: 'E4'
 }
+READOUT_TIME_INTERVAL = 500
 
-# #Widget for live readout graph (Not DB Saved)
-# class OhmVsTimePlot(pg.PlotWidget):
-#     def __init__(self):
-#         super(OhmVsTimePlot, self).__init__()
+from widgets.log_mixin import LogMixin
+class Sensor(qtw.QWidget):
+    """
+    Signals: data_write \n
+    Slots: read_adc, write_adc, live_readout
+    """
+    data_write = Signal(str) # Signal to propogate to Sensors
+    continous_readout = Signal(bool)
 
-#     def update_plot(self):
-#         #update plot
-#         pass
+    def __init__(self, name: str, channel: int):
+        super(Sensor, self).__init__()
 
-# #Widget for each Sensor calib graph (DB Saved)
-# class Sensor():
-#     def __init__(self, channel: int, com_port: ComPort):
-#         #self.run_start_time = None
-#         self.channel = channel if channel in ENABLED_CHANNELS else None
-#         self.pending_readout = False
-#         self.com_port = com_port
+        self.name = name
+        self.channel = channel
+        self.measure_adc_command = f"measure {self.channel}"
+        self.measurement_pending = False #makes sure the # of reads and # of writes are equal
 
-#     def readout_adc(self):
-#         self.write_port(f'measure {self.channel}')
-#         self.pending_readout = True
+        # Initialize the data
+        self.raw_adcs = []
+        self.time = []
 
-# class SubassemblyPlot(pg.PlotWidget):
-#     def __init__(self):
-#         super(SubassemblyPlot, self).__init__()
+    @Slot()
+    def live_readout(self, start: bool):
+        if start:
+            self.timer = QTimer()
+            self.timer.timeout.connect(self.write_adc)
+            self.timer.start(READOUT_TIME_INTERVAL)  # Update every 1000 ms (1 second)
+        elif not start and hasattr(self, 'timer'):
+            self.timer.stop()
+        else:
+            #started live readout before timer
+            pass
+    @Slot(str)
+    def read_adc(self, data:str):
+        if self.measure_adc_command in data:
+            _, _, raw_adc = data.split()
+            self.raw_adcs.append(raw_adc)
+            self.measurement_pending = False
 
-        #somehow use Sensor to update and put both onto this plot widget, main makes 4 of these
+    @Slot()
+    def write_adc(self):
+        if not self.measurement_pending:
+            self.data_write.emit(self.measure_adc_command)
+            self.measurement_pending = True
+
 
 class MainWindow(qtw.QMainWindow):
-    log_message = Signal(str)
+    # log_message = Signal(str)
 
     def __init__(self):
         super(MainWindow, self).__init__()
 
         self.setWindowTitle("Module Calibration") 
-
         #------------------MENU BAR-----------------#
         self.menu = self.menuBar()
 
@@ -88,7 +109,6 @@ class MainWindow(qtw.QMainWindow):
         port_disconnect_action = QAction('Disconnect', self)
         port_disconnect_action.triggered.connect(self.com_port.disconnect_port)
         self.port_menu.addAction(port_disconnect_action)
-
         #--------------End of Menu Bar--------------#
 
         #----------------- Tool Bar ----------------#
@@ -112,27 +132,53 @@ class MainWindow(qtw.QMainWindow):
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
+        #Sensor Readout
+        self.Etroc3 = Sensor('E3', 1)
+        # self.Etroc4 = Sensor('E4', 8)
+
+        self.live_readout_btn = qtw.QPushButton('Start', self)
+        self.live_readout_btn.setCheckable(True)
+        self.live_readout_btn.toggled.connect(self.Etroc3.live_readout)
+        #self.live_readout_btn.toggled.connect(self.Etroc4.live_readout)
+
+        self.live_readout_btn.toggled.connect(self.live_readout_btn_text)
+
+        # self.live_readout_btn.toggled.connect(partial(self.toggle_live_readout, self.Etroc3))
+        
+        main_layout.addWidget(self.live_readout_btn)
+
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
-        self.setCentralWidget(central_widget)
 
+        self.setCentralWidget(central_widget)
         #-----------End of Central Layout----------#
 
         #----------CONNECTING SIGNALS AND SLOTS FOR EXTERNAL WIDGETS------------#
-        self.com_port.log_message[str].connect(self.log)
+        # REMEMBER:
+        # self.Widget.Signal.connect(Slot)
+        self.com_port.log_message[str].connect(self.log) 
         self.com_port.data_read[str].connect(self.log)
 
-        # layout.addWidget(SubassemblyPlot('Subassembly 1'), 0,0)
-        # layout.addWidget(SubassemblyPlot('Subassembly 2'), 0,1)
-        # layout.addWidget(SubassemblyPlot('Subassembly 3'), 1,0)
-        # layout.addWidget(SubassemblyPlot('Subassembly 4'), 1,1)
+        #self.Etroc3.log_message[str].connect(self.log)
+        self.Etroc3.data_write[str].connect(self.com_port.write)
+        #self.Etroc4.data_write[str].connect(self.com_port.write)
 
-    
+        self.com_port.data_read[str].connect(self.Etroc3.read_adc)
+        #self.com_port.data_read[str].connect(self.Etroc4.read_adc)
+
     def write_adc_action(self, name: str, adc_command: str) -> QAction:
+        """
+        Used for generalizing the adding of toolbar buttons
+        """
         write_action = QAction(name, self)
         write_action.triggered.connect(partial(self.com_port.write, adc_command))
         return write_action
+
+    @Slot()
+    def live_readout_btn_text(self, checked: bool):
+        btn_text = 'Start' if not checked else 'Stop'
+        self.live_readout_btn.setText(btn_text)
 
     @Slot(str)
     def log(self, text: str) -> None:
