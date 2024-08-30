@@ -91,22 +91,43 @@ class MainWindow(qtw.QMainWindow):
 
         #--------------End of Menu Bar--------------#
 
+        #----------------- Tool Bar ----------------#
+
+        # Create the toolbar
+        toolbar = self.addToolBar('Main Toolbar')
+
+        # Create Reset Button and add to toolbar
+        self.reset_btn = QAction('Reset ADC', self)
+        self.reset_btn.triggered.connect(partial(self.com_port.write, 'reset'))
+        toolbar.addAction(self.reset_btn)
+
+        # Create Calibrate Button and add to toolbar
+        self.calibrate_btn = QAction('Calibrate', self)
+        self.calibrate_btn.triggered.connect(partial(self.com_port.write, 'calibrate'))
+        toolbar.addAction(self.calibrate_btn)
+
+        # Create Measure Button and add to toolbar
+        self.measure_btn = QAction('Measure', self)
+        measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}"  # Converts all ints to str by map and joins them by space
+        self.measure_btn.triggered.connect(partial(self.com_port.write, measure_str))
+        toolbar.addAction(self.measure_btn)
+
         #--------------Central Layout---------------#
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
-        self.reset_btn = qtw.QPushButton('Reset ADC')
-        self.reset_btn.clicked.connect(partial(self.com_port.write, 'reset'))
-        main_layout.addWidget(self.reset_btn)
+        # self.reset_btn = qtw.QPushButton('Reset ADC')
+        # self.reset_btn.clicked.connect(partial(self.com_port.write, 'reset'))
+        # main_layout.addWidget(self.reset_btn)
 
-        self.calibrate_btn = qtw.QPushButton('Calibrate')
-        self.calibrate_btn.clicked.connect(partial(self.com_port.write, 'calibrate'))
-        main_layout.addWidget(self.calibrate_btn)
+        # self.calibrate_btn = qtw.QPushButton('Calibrate')
+        # self.calibrate_btn.clicked.connect(partial(self.com_port.write, 'calibrate'))
+        # main_layout.addWidget(self.calibrate_btn)
 
-        self.measure_btn = qtw.QPushButton('Measure')
-        measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}" #converts all ints to str by map and joins them by space
-        self.measure_btn.clicked.connect(partial(self.com_port.write, measure_str))
-        main_layout.addWidget(self.measure_btn)
+        # self.measure_btn = qtw.QPushButton('Measure')
+        # measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}" #converts all ints to str by map and joins them by space
+        # self.measure_btn.clicked.connect(partial(self.com_port.write, measure_str))
+        # main_layout.addWidget(self.measure_btn)
 
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
