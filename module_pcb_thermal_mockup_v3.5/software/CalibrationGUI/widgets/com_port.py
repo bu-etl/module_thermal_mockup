@@ -28,15 +28,16 @@ class ComPort(qtw.QComboBox):
         self.timer.start(1000)  # Read data every 1000 ms (1 second)
 
     @Slot() #can be made type safe 
-    def select_port(self):
+    def select_port(self) -> None:
         ''' Slot for when a port is selected from the dropdown'''
         index = self.currentIndex()
         if index > 0:  # Ignoring the first 'Select Port' line
             port_info = self.itemData(index)
             self.connect_port(port_info)
 
-    def connect_port(self, port):
+    def connect_port(self, port: QSerialPortInfo) -> None:
         """Connects and sets port to the corresponding port info"""
+        print(type(port))
         self.disconnect_port() #if already connected to another port, disconnect
         self.log(f"Connecting to port: {port.portName()}")
         self.port = QSerialPort(port)
@@ -56,7 +57,7 @@ class ComPort(qtw.QComboBox):
         self.log(f"Successfully connected to: {port.portName()}")
         # self.port._error_handler = self.port.errorOccurred.connect(self.log_port_error)
 
-    def read(self) -> None:
+    def read(self) -> str:
         if self.port is None:
             return
         data = self.port.readLine()
@@ -66,19 +67,21 @@ class ComPort(qtw.QComboBox):
             self.data_read.emit(data)
         return data
     
-    def write(self, message: str):
+    def write(self, message: str) -> None:
         if self.port is None:
             return
         self.port.write(message.encode() + b'\n')
     
-    def disconnect_port(self):
+    def disconnect_port(self) -> None:
         if self.port is not None:
             # if hasattr(self.port, '_error_handler'):
             #     self.port.errorOccurred.disconnect(self.port._error_handler)
             self.port.close()
+            self.log(f"Disconnected from port: {self.port.portName()}")
+            self.setCurrentIndex(0)
             self.port = None
 
-    def log(self, message):
+    def log(self, message: str) -> None:
         ''' Emit log messages via signal '''
         #when a signal is emitted, any widget (slot) connected to it triggers
         self.log_message.emit(message)

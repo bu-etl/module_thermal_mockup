@@ -123,11 +123,11 @@ class MainWindow(qtw.QMainWindow):
         # layout.addWidget(SubassemblyPlot('Subassembly 4'), 1,1)
     
     @Slot(str)
-    def log(self, text: str):
+    def log(self, text: str) -> None:
         self.serial_display.appendPlainText(text)
 
     @Slot()
-    def _close(self):
+    def _close(self) -> None:
         self.com_port.disconnect_port()
         self.close()
 
