@@ -8,7 +8,7 @@ class ComPort(qtw.QComboBox):
     """
 
     log_message = Signal(str)  # Signal to propagate log messages
-    data_read_signal = Signal(str) # Signal to propogate to Sensors
+    data_read = Signal(str) # Signal to propogate to Sensors
 
     def __init__(self):
         super(ComPort, self).__init__()
@@ -56,22 +56,20 @@ class ComPort(qtw.QComboBox):
         self.log(f"Successfully connected to: {port.portName()}")
         # self.port._error_handler = self.port.errorOccurred.connect(self.log_port_error)
 
-    # GOAL: Emit a signal when data is ready
-    #make this a signal of ComPort, reading when read it triggers data to be sent to sensors 
-    # -> in mainwindow self.ComPort.read.connect(self.ETROC1.whatever) In there you gotta decide if that is data you want
     def read(self) -> None:
         if self.port is None:
             return
         data = self.port.readLine()
         data = QTextStream(data).readAll().strip()
-
-        self.data_read_signal.emit(data) # need to add slot in sensors to read this data, there they deterine if the data is for them
+        if data:
+            #EMITS DATA READ SIGNAL
+            self.data_read.emit(data)
         return data
     
     def write(self, message: str):
         if self.port is None:
             return
-        self.com_port.write(message.encode() + b'\n')
+        self.port.write(message.encode() + b'\n')
     
     def disconnect_port(self):
         if self.port is not None:

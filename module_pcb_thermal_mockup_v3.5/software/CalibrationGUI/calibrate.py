@@ -85,26 +85,43 @@ class MainWindow(qtw.QMainWindow):
         port_widget_action.setDefaultWidget(self.com_port)
         self.port_menu.addAction(port_widget_action)
 
+        port_disconnect_action = QAction('Disconnect', self)
+        port_disconnect_action.triggered.connect(self.com_port.disconnect_port)
+        self.port_menu.addAction(port_disconnect_action)
+
         #--------------End of Menu Bar--------------#
 
         #--------------Central Layout---------------#
-
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
+
+        self.reset_btn = qtw.QPushButton('Reset ADC')
+        self.reset_btn.clicked.connect(partial(self.com_port.write, 'reset'))
+        main_layout.addWidget(self.reset_btn)
+
+        self.calibrate_btn = qtw.QPushButton('Calibrate')
+        self.calibrate_btn.clicked.connect(partial(self.com_port.write, 'calibrate'))
+        main_layout.addWidget(self.calibrate_btn)
+
+        self.measure_btn = qtw.QPushButton('Measure')
+        measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}" #converts all ints to str by map and joins them by space
+        self.measure_btn.clicked.connect(partial(self.com_port.write, measure_str))
+        main_layout.addWidget(self.measure_btn)
 
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
         self.setCentralWidget(central_widget)
 
-        #----------CONNECTING SIGNALS AND SLOTS------------#
+        #----------CONNECTING SIGNALS AND SLOTS FOR EXTERNAL WIDGETS------------#
         self.com_port.log_message[str].connect(self.log)
+        self.com_port.data_read[str].connect(self.log)
 
         # layout.addWidget(SubassemblyPlot('Subassembly 1'), 0,0)
         # layout.addWidget(SubassemblyPlot('Subassembly 2'), 0,1)
         # layout.addWidget(SubassemblyPlot('Subassembly 3'), 1,0)
         # layout.addWidget(SubassemblyPlot('Subassembly 4'), 1,1)
-        
+    
     @Slot(str)
     def log(self, text: str):
         self.serial_display.appendPlainText(text)
@@ -113,7 +130,6 @@ class MainWindow(qtw.QMainWindow):
     def _close(self):
         self.com_port.disconnect_port()
         self.close()
-    
 
 def main():
     APP = qtw.QApplication()
