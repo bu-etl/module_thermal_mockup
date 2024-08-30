@@ -36,7 +36,6 @@ class Sensor(qtw.QWidget):
     Slots: read_adc, write_adc, live_readout
     """
     data_write = Signal(str) # Signal to propogate to Sensors
-    continous_readout = Signal(bool)
 
     def __init__(self, name: str, channel: int):
         super(Sensor, self).__init__()
