@@ -66,7 +66,8 @@ class MainWindow(qtw.QMainWindow):
 
         #Run Menu
         self.run_menu = self.menu.addMenu('Run')
-
+        
+        # What an action is -> https://www.pythonguis.com/tutorials/pyside6-actions-toolbars-menus/
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self._close)
         exit_action.setShortcut('Ctrl+Q')
@@ -79,7 +80,6 @@ class MainWindow(qtw.QMainWindow):
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
         self.com_port= ComPort()
-        # What an action is     -> https://www.pythonguis.com/tutorials/pyside6-actions-toolbars-menus/
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
         port_widget_action.setDefaultWidget(self.com_port)
@@ -92,47 +92,32 @@ class MainWindow(qtw.QMainWindow):
         #--------------End of Menu Bar--------------#
 
         #----------------- Tool Bar ----------------#
-
-        # Create the toolbar
         toolbar = self.addToolBar('Main Toolbar')
 
-        # Create Reset Button and add to toolbar
-        self.reset_btn = QAction('Reset ADC', self)
-        self.reset_btn.triggered.connect(partial(self.com_port.write, 'reset'))
-        toolbar.addAction(self.reset_btn)
+        self.reset_adc = self.write_adc_action('Reset ADC', 'reset')
+        toolbar.addAction(self.reset_adc)
 
-        # Create Calibrate Button and add to toolbar
-        self.calibrate_btn = QAction('Calibrate', self)
-        self.calibrate_btn.triggered.connect(partial(self.com_port.write, 'calibrate'))
-        toolbar.addAction(self.calibrate_btn)
+        self.calibrate_adc = self.write_adc_action('Calibrate ADC', 'calibrate')
+        toolbar.addAction(self.calibrate_adc)
 
-        # Create Measure Button and add to toolbar
-        self.measure_btn = QAction('Measure', self)
-        measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}"  # Converts all ints to str by map and joins them by space
-        self.measure_btn.triggered.connect(partial(self.com_port.write, measure_str))
-        toolbar.addAction(self.measure_btn)
+        adc_command = f"measure {' '.join(map(str, ENABLED_CHANNELS))}"
+        self.measure_all_adc = self.write_adc_action('Measure All ADC', adc_command)
+        toolbar.addAction(self.measure_all_adc)
+
+        self.probe_adc = self.write_adc_action('Read Probes', 'probe 1 2 3')
+        toolbar.addAction(self.probe_adc)
+        #-------------End of Tool Bar---------------#
 
         #--------------Central Layout---------------#
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
-        # self.reset_btn = qtw.QPushButton('Reset ADC')
-        # self.reset_btn.clicked.connect(partial(self.com_port.write, 'reset'))
-        # main_layout.addWidget(self.reset_btn)
-
-        # self.calibrate_btn = qtw.QPushButton('Calibrate')
-        # self.calibrate_btn.clicked.connect(partial(self.com_port.write, 'calibrate'))
-        # main_layout.addWidget(self.calibrate_btn)
-
-        # self.measure_btn = qtw.QPushButton('Measure')
-        # measure_str = f"measure {' '.join(map(str, ENABLED_CHANNELS))}" #converts all ints to str by map and joins them by space
-        # self.measure_btn.clicked.connect(partial(self.com_port.write, measure_str))
-        # main_layout.addWidget(self.measure_btn)
-
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
         self.setCentralWidget(central_widget)
+
+        #-----------End of Central Layout----------#
 
         #----------CONNECTING SIGNALS AND SLOTS FOR EXTERNAL WIDGETS------------#
         self.com_port.log_message[str].connect(self.log)
@@ -142,7 +127,13 @@ class MainWindow(qtw.QMainWindow):
         # layout.addWidget(SubassemblyPlot('Subassembly 2'), 0,1)
         # layout.addWidget(SubassemblyPlot('Subassembly 3'), 1,0)
         # layout.addWidget(SubassemblyPlot('Subassembly 4'), 1,1)
+
     
+    def write_adc_action(self, name: str, adc_command: str) -> QAction:
+        write_action = QAction(name, self)
+        write_action.triggered.connect(partial(self.com_port.write, adc_command))
+        return write_action
+
     @Slot(str)
     def log(self, text: str) -> None:
         self.serial_display.appendPlainText(text)
