@@ -1,6 +1,7 @@
 import PySide6.QtWidgets as qtw
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6.QtCore import Signal, Slot, QIODevice, QTextStream, QTimer
+import time
 
 class ComPort(qtw.QComboBox):
     """
@@ -8,9 +9,9 @@ class ComPort(qtw.QComboBox):
     """
 
     log_message = Signal(str)  # Signal to propagate log messages
-    data_read = Signal(str) # Signal to propogate to Sensors
+    read = Signal(str) # Signal to propogate to Sensors
 
-    def __init__(self):
+    def __init__(self, read_rate):
         super(ComPort, self).__init__()
         self.port = None
 
@@ -24,8 +25,8 @@ class ComPort(qtw.QComboBox):
 
         # Set up continuous reading
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.read)
-        self.timer.start(1000)  # Read data every 1000 ms (1 second)
+        self.timer.timeout.connect(self._read)
+        self.timer.start(read_rate) # ms 
 
     @Slot() #can be made type safe 
     def select_port(self) -> None:
@@ -56,18 +57,19 @@ class ComPort(qtw.QComboBox):
         self.log(f"Successfully connected to: {port.portName()}")
         # self.port._error_handler = self.port.errorOccurred.connect(self.log_port_error)
 
-    def read(self) -> str:
+    def _read(self) -> str:
         if self.port is None:
             return
         data = self.port.readLine()
         data = QTextStream(data).readAll().strip()
         if data:
             #EMITS DATA READ SIGNAL
-            self.data_read.emit(data)
+            self.read.emit(data)
         return data
     
-    def write(self, message: str) -> None:
+    def _write(self, message: str) -> None:
         if self.port is not None:
+            print(f"COMPORT WRITE MESSAGE: {message}")
             self.port.write(message.encode() + b'\n')
     
     def disconnect_port(self) -> None:
