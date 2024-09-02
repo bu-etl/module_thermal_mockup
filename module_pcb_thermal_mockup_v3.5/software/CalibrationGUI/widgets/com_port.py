@@ -69,9 +69,8 @@ class ComPort(qtw.QComboBox):
     
     def _write(self, message: str) -> None:
         if self.port is not None:
-            print(f"COMPORT WRITE MESSAGE: {message}")
             self.port.write(message.encode() + b'\n')
-    
+
     def disconnect_port(self) -> None:
         if self.port is not None:
             # if hasattr(self.port, '_error_handler'):

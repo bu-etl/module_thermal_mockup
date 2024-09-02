@@ -20,7 +20,7 @@ class Sensor(QWidget):
 
         # Initialize the data
         self.raw_adcs = []
-        self.time = []
+        self.times = []
 
         #Store the last readout to check for this case:
         # > meas
@@ -59,7 +59,7 @@ class Sensor(QWidget):
         if self.measure_adc_command in data:
             raw_adc = data.split()[-1] #last one will always be raw_adc
             self.raw_adcs.append(raw_adc)
-            self.time.append(datetime.now())
+            self.times.append(datetime.now())
             self.measurement_pending = False
         
         #for checking split lines on arduino

@@ -1,33 +1,37 @@
 import sys
 import PySide6.QtWidgets as qtw
-from PySide6.QtCore import Signal, Slot, QTimer
+from PySide6.QtCore import Slot
 from PySide6.QtGui import QAction
 from sqlalchemy import create_engine, select, Engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 #from env import DATABASE_URI
 #import data_models as dm
-from typing import Literal
 from functools import partial
 import pyqtgraph as pg
 from widgets.com_port import ComPort
 from widgets.module import Module
 
-#ENABLED_CHANNELS = [1, 3, 8]
-ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
+ENABLED_CHANNELS = [1, 3, 8]
+#ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 DB_RUN_MODES = ('CALIBRATE')
 DATA_STORE = ['DB']
 
-channel_sensor_map = {
-    1: 'E3',
-    2: 'L1',
-    3: 'E1',
-    4: 'L2',
-    5: 'E2',
-    6: 'L3',
-    7: 'L4',
-    8: 'E4'
+channel_equations = {
+    1: lambda ohms: (ohms - 723.5081039009991) / 3.0341696569667955,
+    3: lambda ohms: (ohms - 740.9934812257274) / 3.6682463501270317,
+    7: lambda ohms: (ohms - 843.5650697047028) / 3.5332573008093036,
+    8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
+
+def raw_adc_to_ohms(raw_adc: str) -> float:
+    num = int(str(raw_adc)[:-2],16)
+    #print(num)
+    volts = 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
+    #print(volts)
+    ohms = 1E3 / (5 / volts - 1)
+    #print(ohms)
+    return ohms
 
 class MainWindow(qtw.QMainWindow):
     # log_message = Signal(str)
@@ -92,14 +96,28 @@ class MainWindow(qtw.QMainWindow):
 
         self.live_readout_btn = qtw.QPushButton('Start', self)
         self.live_readout_btn.setCheckable(True)
+
         self.live_readout_btn.toggled.connect(self.Module.live_readout)
-        #self.live_readout_btn.toggled.connect(self.live_readout_btn_text)
         self.live_readout_btn.toggled.connect(
             lambda checked: self.live_readout_btn.setText('Start' if not checked else 'Stop')
         )
 
         main_layout.addWidget(self.live_readout_btn)
 
+        # Ohm vs Time Plot
+        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'w', 'black']
+        self.plotWidget = pg.PlotWidget(title="Ohms Over Time")
+        # for i, sensor in enumerate(self.Module.sensors.values()):
+        #     self.plotWidget.plot(pen=colors[i], name=sensor.name)
+
+        self.plots = {}
+        for i, channel in enumerate(self.Module.sensors):
+            # Initialize plotItem for each sensor name
+            self.plots[channel] = self.plotWidget.plot([], [], pen=colors[i], name=channel)#pg.mkPen(np.random.randint(0, 255, 3), width=2))
+        
+        main_layout.addWidget(self.plotWidget)
+
+        # Serial Monitor
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
@@ -108,13 +126,14 @@ class MainWindow(qtw.QMainWindow):
         #-----------End of Central Layout----------#
 
         #----------CONNECTING SIGNALS AND SLOTS FOR EXTERNAL WIDGETS------------#
-        # REMEMBER:
-        # self.Widget.Signal.connect(Slot)
+        # REMEMBER: Widget.Signal.connect(Slot)
         self.com_port.log_message[str].connect(self.log) 
         self.com_port.read[str].connect(self.log)
 
         self.Module.write[str].connect(self.com_port._write)
         self.com_port.read[str].connect(self.Module._read)
+        self.com_port.read[str].connect(self.update_plot)
+
 
     def write_adc_action(self, name: str, adc_command: str) -> QAction:
         """
@@ -123,6 +142,21 @@ class MainWindow(qtw.QMainWindow):
         write_action = QAction(name, self)
         write_action.triggered.connect(partial(self.com_port._write, adc_command))
         return write_action
+    
+    def update_plot(self, _):
+        for channel, sensor in self.Module.sensors.items():
+            if not sensor.raw_adcs:
+                continue
+            
+            t0 = sensor.times[0]
+            elapsed_time = lambda t: (t - t0).total_seconds() / 60 
+            elapsed_times = [elapsed_time(t) for t in sensor.times]
+
+            ohms = [raw_adc_to_ohms(raw_adc) for raw_adc in sensor.raw_adcs]
+
+            self.plots[channel].setData(
+                elapsed_times, ohms
+            )
 
     @Slot()
     def live_readout_btn_text(self, checked: bool):
