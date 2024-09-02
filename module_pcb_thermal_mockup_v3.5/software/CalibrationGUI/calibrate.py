@@ -44,10 +44,15 @@ class Sensor(qtw.QWidget):
         self.channel = channel
         self.measure_adc_command = f"measure {self.channel}"
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
-
+        self.raw_adc_length = 6
         # Initialize the data
         self.raw_adcs = []
         self.time = []
+
+        #could store the last readout to check for this case:
+        # > meas
+        # > ure 1 7250ff
+        self.last_readout = ''
 
     @Slot()
     def live_readout(self, start: bool):
@@ -62,10 +67,25 @@ class Sensor(qtw.QWidget):
             pass
     @Slot(str)
     def read_adc(self, data:str):
+        #first check if data was split over two lines, sometimes happens
+        merged_line_data = self.last_readout + data
+        expected_data_length = len(self.measure_adc_command) + self.raw_adc_length + 1 #+1 for the space between "measure 1" and raw_adc, total is 16 
+        data_was_split = (
+            (merged_line_data).count(self.measure_adc_command)==1 #if data was split, the merged data should only contain the measure_adc_command once
+            and 
+            len(merged_line_data)==expected_data_length #its length should also be something like len("measure 1 72a4ff"), prevents cases like "measure 1 72a4ffmeasure 2 72a4ff"
+        )
+        if data_was_split:
+            data = merged_line_data
+        
+        #check if command is in data
         if self.measure_adc_command in data:
-            _, _, raw_adc = data.split()
+            raw_adc = data.split()[-1] #last one will always be raw_adc
             self.raw_adcs.append(raw_adc)
             self.measurement_pending = False
+        
+        #for checking split lines on arduino
+        self.last_readout = data
 
     @Slot()
     def write_adc(self):
