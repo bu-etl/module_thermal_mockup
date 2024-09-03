@@ -10,11 +10,11 @@ class Module(QWidget):
     write = Signal(str) # Signal to propogate to Sensors
     read = Signal(int)
 
-    def __init__(self, name: str, enabled_channels: list[int]):
+    def __init__(self, name: str, enabled_channels: list[int], readout_interval=1000):
         super(Module, self).__init__()
         self.name = name
         self.enabled_channels = enabled_channels
-        self.readout_interval = 1000 #ms
+        self.readout_interval = readout_interval
 
         self.channel_map = {
             1: 'E3',

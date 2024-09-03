@@ -59,12 +59,14 @@ class Sensor(QWidget):
             len(merged_line_data)==expected_data_length #its length should also be something like len("measure 1 72a4ff"), prevents cases like "measure 1 72a4ffmeasure 2 72a4ff"
         )
         if data_was_split:
+            print("data was split!")
+            print(self.last_readout, data)
             data = merged_line_data
         
         #check if command is in data
-        if self.measure_adc_command in data:
+        if self.measure_adc_command in data and len(data) == expected_data_length:
             raw_adc = data.split()[-1] #last one will always be raw_adc
-            if raw_adc != '0':
+            if raw_adc != '0' or not raw_adc:
                 #sometimes raw_adc can give 0, skip append for these
                 self.raw_adcs.append(raw_adc)
                 self.times.append(datetime.now())

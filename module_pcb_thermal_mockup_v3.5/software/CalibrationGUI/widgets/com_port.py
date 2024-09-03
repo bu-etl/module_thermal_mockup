@@ -11,10 +11,10 @@ class ComPort(qtw.QComboBox):
     log_message = Signal(str)  # Signal to propagate log messages
     read = Signal(str) # Signal to propogate to Sensors
 
-    def __init__(self):
+    def __init__(self, readout_interval=1000):
         super(ComPort, self).__init__()
         self.port = None
-        self.readout_interval = 1000 #ms
+        self.readout_interval = readout_interval #ms
 
         self.clear()
         self.addItem('Select Port')

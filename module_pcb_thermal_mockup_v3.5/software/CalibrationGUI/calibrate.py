@@ -13,7 +13,6 @@ from widgets.module import Module
 
 ENABLED_CHANNELS = [1, 3, 8]
 #ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
-
 DB_RUN_MODES = ('CALIBRATE')
 DATA_STORE = ['DB']
 
@@ -49,8 +48,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
-        self.com_port= ComPort()
-        self.com_port.readout_interval = 50 #ms
+        self.com_port= ComPort(readout_interval=150)
 
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
@@ -84,8 +82,7 @@ class MainWindow(qtw.QMainWindow):
         main_layout = qtw.QVBoxLayout(central_widget)
 
         #LIVE READOUT BUTTON
-        self.Module = Module('Module 1', ENABLED_CHANNELS)
-        self.Module.readout_interval = 100
+        self.Module = Module('Module 1', ENABLED_CHANNELS, readout_interval=100)
 
         self.live_readout_btn = qtw.QPushButton('Start', self)
         self.live_readout_btn.setCheckable(True)
