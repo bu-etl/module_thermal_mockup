@@ -65,18 +65,17 @@ class MainWindow(qtw.QMainWindow):
         #----------------- Tool Bar ----------------#
         toolbar = self.addToolBar('Main Toolbar')
 
-        self.reset_adc = self.write_adc_action('Reset ADC', 'reset')
+        self.reset_adc = self.write_adc_action('Reset', 'reset')
         toolbar.addAction(self.reset_adc)
 
-        self.calibrate_adc = self.write_adc_action('Calibrate ADC', 'calibrate')
+        self.calibrate_adc = self.write_adc_action('Calibrate', 'calibrate')
         toolbar.addAction(self.calibrate_adc)
 
         adc_command = f"measure {' '.join(map(str, ENABLED_CHANNELS))}"
-        #adc_command = "measure 8"
-        self.measure_all_adc = self.write_adc_action('Measure All ADC', adc_command)
+        self.measure_all_adc = self.write_adc_action('Measure All', adc_command)
         toolbar.addAction(self.measure_all_adc)
 
-        self.probe_adc = self.write_adc_action('Read Probes', 'probe 1 2 3')
+        self.probe_adc = self.write_adc_action('Probes', 'probe 1 2 3')
         toolbar.addAction(self.probe_adc)
         #-------------End of Tool Bar---------------#
 
@@ -84,7 +83,7 @@ class MainWindow(qtw.QMainWindow):
         central_widget = qtw.QWidget()
         main_layout = qtw.QVBoxLayout(central_widget)
 
-        #Sensor Readout
+        #LIVE READOUT BUTTON
         self.Module = Module('Module 1', ENABLED_CHANNELS)
         self.Module.readout_interval = 100
 
@@ -95,23 +94,32 @@ class MainWindow(qtw.QMainWindow):
         self.live_readout_btn.toggled.connect(
             lambda checked: self.live_readout_btn.setText('Start' if not checked else 'Stop')
         )
-
         main_layout.addWidget(self.live_readout_btn)
 
-        # Ohm vs Time Plot
+        # OHM VS TIME PLOT
         colors = ['r', 'g', 'b', 'c', 'm', 'y', 'w', 'black']
-        self.plotWidget = pg.PlotWidget(title="Ohms Over Time")
+        self.plotWidget = pg.PlotWidget(title="Ohms Over Time", background="#ebf0ee")
         # for i, sensor in enumerate(self.Module.sensors.values()):
         #     self.plotWidget.plot(pen=colors[i], name=sensor.name)
-
-        self.plots = {}
-        for i, channel in enumerate(self.Module.sensors):
+        self.plotWidget.addLegend()
+        self.plotWidget.showGrid(x=True, y=True)
+        self.live_plots = {}
+        for i, (channel, sensor) in enumerate(self.Module.sensors.items()):
             # Initialize plotItem for each sensor name
-            self.plots[channel] = self.plotWidget.plot([], [], pen=colors[i], name=channel)#pg.mkPen(np.random.randint(0, 255, 3), width=2))
-        
+            self.live_plots[channel] = self.plotWidget.plot([], [], pen=colors[i], name=sensor.name)
         main_layout.addWidget(self.plotWidget)
 
-        # Serial Monitor
+        # SELECT PLOT LINE WIDGET
+        self.select_sensor_dropdown = qtw.QComboBox()
+        self.select_sensor_dropdown.addItem('Select Sensor')
+        for channel, sensor in self.Module.sensors.items():
+            self.select_sensor_dropdown.addItem(
+                sensor.name, self.live_plots[channel]
+            )
+        self.select_sensor_dropdown.currentIndexChanged.connect(self.select_sensor)
+        main_layout.addWidget(self.select_sensor_dropdown)
+
+        # SERIAL MONITOR
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         main_layout.addWidget(self.serial_display)
@@ -139,20 +147,28 @@ class MainWindow(qtw.QMainWindow):
     
     def update_plot(self, channel: int):
         sensor = self.Module.sensors.get(channel)
-        if sensor.raw_adcs:
+        if sensor is not None and sensor.raw_adcs:
             t0 = sensor.times[0]
             elapsed_time = lambda t: (t - t0).total_seconds() / 60 
             elapsed_times = [elapsed_time(t) for t in sensor.times]
 
-            self.plots[channel].setData(
+            self.live_plots[channel].setData(
                 elapsed_times, sensor.ohms
             )
 
-        # for channel, sensor in self.Module.sensors.items():
-        #     if not sensor.raw_adcs:
-        #         continue
-
-
+    @Slot(int)
+    def select_sensor(self, index):
+        for _, live_plot in self.live_plots.items():
+            self.plotWidget.removeItem(live_plot)       
+        if index <= 0:
+            #select all sensors
+            for _, live_plot in self.live_plots.items():
+               self.plotWidget.addItem(live_plot)
+        elif index > 0:
+            #select singular sensor
+            sensor_name = self.select_sensor_dropdown.currentText()
+            channel = self.Module.get_channel(sensor_name)
+            self.plotWidget.addItem(self.live_plots[channel])
 
     @Slot()
     def live_readout_btn_text(self, checked: bool):

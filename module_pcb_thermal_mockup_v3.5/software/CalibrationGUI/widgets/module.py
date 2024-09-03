@@ -63,6 +63,11 @@ class Module(QWidget):
             for sensor in self.sensors.values():
                 sensor.measurement_pending = True
 
+    def get_channel(self, search_name: str):
+        for channel, name in self.channel_map.items():
+            if name == search_name:
+                return channel
+
 #-----------------OTHER OPTION OF READOUT BUT SEEMS SKETYCH--------------------#
 
 # Module __init__
