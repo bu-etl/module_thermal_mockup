@@ -11,9 +11,10 @@ class ComPort(qtw.QComboBox):
     log_message = Signal(str)  # Signal to propagate log messages
     read = Signal(str) # Signal to propogate to Sensors
 
-    def __init__(self, read_rate):
+    def __init__(self):
         super(ComPort, self).__init__()
         self.port = None
+        self.readout_interval = 1000 #ms
 
         self.clear()
         self.addItem('Select Port')
@@ -26,7 +27,7 @@ class ComPort(qtw.QComboBox):
         # Set up continuous reading
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._read)
-        self.timer.start(read_rate) # ms 
+        self.timer.start(self.readout_interval) # ms 
 
     @Slot() #can be made type safe 
     def select_port(self) -> None:

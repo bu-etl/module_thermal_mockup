@@ -24,15 +24,6 @@ channel_equations = {
     8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
 
-def raw_adc_to_ohms(raw_adc: str) -> float:
-    num = int(str(raw_adc)[:-2],16)
-    #print(num)
-    volts = 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
-    #print(volts)
-    ohms = 1E3 / (5 / volts - 1)
-    #print(ohms)
-    return ohms
-
 class MainWindow(qtw.QMainWindow):
     # log_message = Signal(str)
 
@@ -58,7 +49,9 @@ class MainWindow(qtw.QMainWindow):
 
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
-        self.com_port= ComPort(1000)
+        self.com_port= ComPort()
+        self.com_port.readout_interval = 50 #ms
+
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
         port_widget_action.setDefaultWidget(self.com_port)
@@ -93,6 +86,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Sensor Readout
         self.Module = Module('Module 1', ENABLED_CHANNELS)
+        self.Module.readout_interval = 100
 
         self.live_readout_btn = qtw.QPushButton('Start', self)
         self.live_readout_btn.setCheckable(True)
@@ -132,8 +126,8 @@ class MainWindow(qtw.QMainWindow):
 
         self.Module.write[str].connect(self.com_port._write)
         self.com_port.read[str].connect(self.Module._read)
-        self.com_port.read[str].connect(self.update_plot)
-
+        #self.com_port.read[str].connect(self.update_plot)
+        self.Module.read[int].connect(self.update_plot)
 
     def write_adc_action(self, name: str, adc_command: str) -> QAction:
         """
@@ -143,20 +137,22 @@ class MainWindow(qtw.QMainWindow):
         write_action.triggered.connect(partial(self.com_port._write, adc_command))
         return write_action
     
-    def update_plot(self, _):
-        for channel, sensor in self.Module.sensors.items():
-            if not sensor.raw_adcs:
-                continue
-            
+    def update_plot(self, channel: int):
+        sensor = self.Module.sensors.get(channel)
+        if sensor.raw_adcs:
             t0 = sensor.times[0]
             elapsed_time = lambda t: (t - t0).total_seconds() / 60 
             elapsed_times = [elapsed_time(t) for t in sensor.times]
 
-            ohms = [raw_adc_to_ohms(raw_adc) for raw_adc in sensor.raw_adcs]
-
             self.plots[channel].setData(
-                elapsed_times, ohms
+                elapsed_times, sensor.ohms
             )
+
+        # for channel, sensor in self.Module.sensors.items():
+        #     if not sensor.raw_adcs:
+        #         continue
+
+
 
     @Slot()
     def live_readout_btn_text(self, checked: bool):

@@ -8,11 +8,14 @@ class Module(QWidget):
     Slots: read, _write, live_readout
     """
     write = Signal(str) # Signal to propogate to Sensors
+    read = Signal(int)
 
     def __init__(self, name: str, enabled_channels: list[int]):
         super(Module, self).__init__()
         self.name = name
         self.enabled_channels = enabled_channels
+        self.readout_interval = 1000 #ms
+
         self.channel_map = {
             1: 'E3',
             2: 'L1',
@@ -28,12 +31,18 @@ class Module(QWidget):
             channel: Sensor(self.channel_map[channel], channel) for channel in enabled_channels
         }
 
+        self.emit_read = lambda channel: self.read.emit(channel)
+        for sensor in self.sensors.values():
+            # whenever the sensors emit the write signal, 
+            # the Module will emit its signal to the com port (passes the command along)
+            sensor.read[int].connect(self.emit_read) # Widget.Signal.connect(Slot)
+
     @Slot()
     def live_readout(self, start: bool):
         if start:
             self.timer = QTimer()
             self.timer.timeout.connect(self._write)
-            self.timer.start(1000)  # Update every 1000 ms (1 second)
+            self.timer.start(self.readout_interval)  # Update every X ms
         elif not start and hasattr(self, 'timer'):
             self.timer.stop()
 
@@ -53,8 +62,6 @@ class Module(QWidget):
             #update the status of the sensors so that they cannot be written to again until data has been read
             for sensor in self.sensors.values():
                 sensor.measurement_pending = True
-
-
 
 #-----------------OTHER OPTION OF READOUT BUT SEEMS SKETYCH--------------------#
 

@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Signal, Slot, QTimer
 from datetime import datetime
+import numpy as np
 
 class Sensor(QWidget):
     """
@@ -8,6 +9,7 @@ class Sensor(QWidget):
     Slots: read, _write, live_readout
     """
     write = Signal(str) # Signal to propogate to Sensors
+    read = Signal(int)
 
     def __init__(self, name: str, channel: int):
         super(Sensor, self).__init__()
@@ -18,6 +20,8 @@ class Sensor(QWidget):
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
         self.raw_adc_length = 6
 
+        self.readout_interval = 1000 #ms
+
         # Initialize the data
         self.raw_adcs = []
         self.times = []
@@ -27,12 +31,14 @@ class Sensor(QWidget):
         # > ure 1 7250ff
         self.last_readout = ''
 
+        #have a spot to get the sensors calibration data
+
     @Slot()
     def live_readout(self, start: bool):
         if start:
             self.timer = QTimer()
             self.timer.timeout.connect(self._write)
-            self.timer.start(1000)  # Update every 1000 ms (1 second)
+            self.timer.start(self.readout_interval)  # Update every 1000 ms (1 second)
         elif not start and hasattr(self, 'timer'):
             self.timer.stop()
         else:
@@ -58,10 +64,14 @@ class Sensor(QWidget):
         #check if command is in data
         if self.measure_adc_command in data:
             raw_adc = data.split()[-1] #last one will always be raw_adc
-            self.raw_adcs.append(raw_adc)
-            self.times.append(datetime.now())
+            if raw_adc != '0':
+                #sometimes raw_adc can give 0, skip append for these
+                self.raw_adcs.append(raw_adc)
+                self.times.append(datetime.now())
             self.measurement_pending = False
-        
+            
+            #for more efficient plot updates
+            self.read.emit(self.channel)
         #for checking split lines on arduino
         self.last_readout = data
 
@@ -73,3 +83,14 @@ class Sensor(QWidget):
         if not self.measurement_pending:
             self.write.emit(self.measure_adc_command)
             self.measurement_pending = True
+
+    @property
+    def ohms(self) -> np.ndarray[float]:
+        #last two in raw_adc string always ff
+        nums = np.array([int(str(raw_adc)[:-2],16) for raw_adc in self.raw_adcs])
+        volts = 2.5 + (nums / 2**15 - 1) * 1.024 * 2.5 / 1
+        ohms = 1E3 / (5 / volts - 1)
+        return ohms
+    
+    def temps(self):
+        pass
