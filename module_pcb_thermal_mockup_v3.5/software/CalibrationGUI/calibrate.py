@@ -43,8 +43,10 @@ class SensorCalibData:
 class CalibInput(qtw.QWidget):
     temp_inputted = Signal(float)
 
-    def __init__(self):
+    def __init__(self, module):
         super(CalibInput, self).__init__()
+
+        self.module = module
 
         main_layout = qtw.QVBoxLayout(self)
 
@@ -82,6 +84,7 @@ class CalibInput(qtw.QWidget):
     
     @Slot(float)
     def update_table(self, T: float):
+        print("hello?")
         time = datetime.now()
 
         # Find the next available row in the table
@@ -211,7 +214,7 @@ class MainWindow(qtw.QMainWindow):
         for i, (channel, sensor) in enumerate(self.Module.sensors.items()):
             self.temp_ohm_plots[channel] = self.TempOhmPlot.plot([], [], pen=colors[i], name=sensor.name)
         calib_layout.addWidget(self.TempOhmPlot, stretch=1)
-        self.calib_input = CalibInput()
+        self.calib_input = CalibInput(self.Module)
         calib_layout.addWidget(self.calib_input, stretch=0)
         
         self.calib_input.temp_inputted.connect(self.update_module_calib_data)
