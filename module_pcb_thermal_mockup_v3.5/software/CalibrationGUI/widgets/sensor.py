@@ -18,7 +18,17 @@ class Sensor(QWidget):
         self.channel = channel
         self.measure_adc_command = f"measure {self.channel}"
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
-        self.raw_adc_length = 6
+        self.raw_adc_length = 6 #length of this string 72a4ff
+
+        #calibration data
+        self.calib_data = {
+            'temps': [],
+            'times': [],
+            'ohms': [],
+            'raw_adcs': [],
+            'fit_slope': None,
+            'fit_intercept': None
+        }
 
         self.readout_interval = 1000 #ms
 
@@ -56,11 +66,11 @@ class Sensor(QWidget):
         data_was_split = (
             (merged_line_data).count(self.measure_adc_command)==1 #if data was split, the merged data should only contain the measure_adc_command once
             and 
+            merged_line_data.startswith(self.measure_adc_command) #cleans rare case where previous cut off is same length as current cut off
+            and
             len(merged_line_data)==expected_data_length #its length should also be something like len("measure 1 72a4ff"), prevents cases like "measure 1 72a4ffmeasure 2 72a4ff"
         )
         if data_was_split:
-            print("data was split!")
-            print(self.last_readout, data)
             data = merged_line_data
         
         #check if command is in data

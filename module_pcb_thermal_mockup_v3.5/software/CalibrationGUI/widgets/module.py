@@ -27,6 +27,17 @@ class Module(QWidget):
             8: 'E4'
         }
 
+        self.color_map = {
+            1: "#9e0202", #dark red -> E3
+            2: "#00ff00", #lime green -> L1
+            3: "#006400", #dark green -> E1
+            4: "#1e90ff", #dodger blue -> L2
+            5: "#191970", #midnightblue -> E2
+            6: "#ff385d", #salmon red pink -> L3
+            7: "#ffd700", #gold -> L4
+            8: "#a39b00" #mustard yellow -> E4
+        }
+
         self.sensors = {
             channel: Sensor(self.channel_map[channel], channel) for channel in enabled_channels
         }

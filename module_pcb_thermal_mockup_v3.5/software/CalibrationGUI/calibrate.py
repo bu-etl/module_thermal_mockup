@@ -7,12 +7,11 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 #from env import DATABASE_URI
 #import data_models as dm
 from functools import partial
+from datetime import datetime
 import pyqtgraph as pg
 from widgets.com_port import ComPort
 from widgets.module import Module
-from datetime import datetime
-from dataclasses import dataclass, field
-from typing import List, Optional
+from widgets.calib_io import CalibIO
 
 ENABLED_CHANNELS = [1, 3, 8]
 #ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -25,86 +24,6 @@ channel_equations = {
     7: lambda ohms: (ohms - 843.5650697047028) / 3.5332573008093036,
     8: lambda ohms: (ohms - 735.6945560895681) / 3.0846916504139346,
 }
-
-# define output data format
-@dataclass
-class CalibData:
-    timestamp: datetime
-    celcius: float
-    raw_adc: str
-    ohm: float
-
-@dataclass
-class SensorCalibData:
-    data: List[CalibData] = field(default_factory=list)
-    slope: Optional[float] = None
-    intercept: Optional[float] = None
-
-class CalibInput(qtw.QWidget):
-    temp_inputted = Signal(float)
-
-    def __init__(self, module):
-        super(CalibInput, self).__init__()
-
-        self.module = module
-
-        main_layout = qtw.QVBoxLayout(self)
-
-        # >>  DELETE CALIBRATION ROW BUTTON
-        self.delete_button = qtw.QPushButton('Delete')
-        self.delete_button.clicked.connect(self.delete_selected_row)
-        main_layout.addWidget(self.delete_button, stretch=0)
-
-        # >>  CALIBRATION TABLE
-        self.calib_table = qtw.QTableWidget(0, 2)
-        self.calib_table.setHorizontalHeaderLabels(['Celcius', 'Time'])
-        main_layout.addWidget(self.calib_table, stretch=3)
-
-        # >>  CALIBRATION TEMPERATURE INPUT
-        calib_input = qtw.QWidget()
-        calib_input_layout = qtw.QHBoxLayout(calib_input)
-
-        self.input_ref_temperature = qtw.QLineEdit()
-        calib_input_layout.addWidget(self.input_ref_temperature, stretch=1)
-
-        self.calib_button = qtw.QPushButton('Enter')
-        self.calib_button.clicked.connect(self.update_data)
-
-        calib_input_layout.addWidget(self.calib_button, stretch=0)
-        main_layout.addWidget(calib_input, stretch=0)
-
-        # >>  self Signals
-        self.temp_inputted.connect(self.update_table)
-    
-    @Slot(float)
-    def update_data(self):
-        #add if string is a float logic here
-        if T := self.input_ref_temperature.text():
-            self.temp_inputted.emit(float(T))
-    
-    @Slot(float)
-    def update_table(self, T: float):
-        print("hello?")
-        time = datetime.now()
-
-        # Find the next available row in the table
-        row_position = self.calib_table.rowCount()
-        self.calib_table.insertRow(row_position)
-
-        time_item = qtw.QTableWidgetItem(f"{time.hour}:{time.minute}")
-        time_item.setFlags(time_item.flags() & ~Qt.ItemIsEditable)
-        self.calib_table.setItem(row_position, 0, qtw.QTableWidgetItem(T))
-        self.calib_table.setItem(row_position, 1, time_item)
-
-        # Clear the input field
-        self.input_ref_temperature.clear()   
-
-    def delete_selected_row(self):
-        # Get the selected row
-        selected_row = self.calib_table.currentRow()
-        # Remove the selected row if there is a selection
-        if selected_row != -1:
-            self.calib_table.removeRow(selected_row)
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
@@ -127,9 +46,16 @@ class MainWindow(qtw.QMainWindow):
         #restart_action.triggered.connnect(self.TODO)
         self.run_menu.addAction(restart_action)
 
+        download_action = QAction('Download', self)
+        download_action.triggered.connect(self.download_data)
+        self.run_menu.addAction(download_action)
+
+        upload_db_action = QAction('Upload (DB)', self)
+        self.run_menu.addAction(upload_db_action)
+
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
-        self.com_port= ComPort(readout_interval=150)
+        self.com_port= ComPort(readout_interval=250)
 
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
@@ -163,69 +89,66 @@ class MainWindow(qtw.QMainWindow):
         main_layout = qtw.QVBoxLayout(central_widget)
 
         # >> LIVE READOUT BUTTON
-        self.Module = Module('Module 1', ENABLED_CHANNELS, readout_interval=100)
+        self.module = Module('TM0001', ENABLED_CHANNELS, readout_interval=250)
 
         readout_btns = qtw.QWidget()
         readout_btn_layout = qtw.QHBoxLayout(readout_btns)
 
         self.live_readout_btn = qtw.QPushButton('Start', self)
         self.live_readout_btn.setCheckable(True)
-        self.live_readout_btn.toggled.connect(self.Module.live_readout)
+        self.live_readout_btn.toggled.connect(self.module.live_readout)
         self.live_readout_btn.toggled.connect(
             lambda checked: self.live_readout_btn.setText('Start' if not checked else 'Stop')
         )
-        readout_btn_layout.addWidget(self.live_readout_btn)
+        readout_btn_layout.addWidget(self.live_readout_btn, stretch=1)
 
         # >>  SELECT PLOT LINE WIDGET
         self.select_sensor_dropdown = qtw.QComboBox()
         self.select_sensor_dropdown.addItem('Select Sensor')
-        for channel, sensor in self.Module.sensors.items():
+        for channel, sensor in self.module.sensors.items():
             self.select_sensor_dropdown.addItem(
                 sensor.name, sensor
             )
-        self.select_sensor_dropdown.currentIndexChanged.connect(self.select_sensor)
 
-        readout_btn_layout.addWidget(self.select_sensor_dropdown)
+        readout_btn_layout.addWidget(self.select_sensor_dropdown, stretch=0)
         main_layout.addWidget(readout_btns)
 
         # >>  OHM VS TIME PLOT
-        colors = ['r', 'g', 'b', 'c', 'm', 'y', 'w', 'black']
-        self.OhmTimePlot = pg.PlotWidget(title="Ohms Over Time", background="#ebf0ee")
+        readout_info = qtw.QWidget()
+        readout_info_layout = qtw.QHBoxLayout(readout_info)
+
+        self.OhmTimePlot = pg.PlotWidget(title="Ohms Over Time", background="#f5f5f5")
         self.OhmTimePlot.addLegend()
         self.OhmTimePlot.showGrid(x=True, y=True)
+        self.OhmTimePlot.setLabel('left', 'Resistance (Ohms)')  # Y-axis label
+        self.OhmTimePlot.setLabel('bottom', 'Time (s)')  # X-axis label
         self.ohm_time_plots = {}
-        for i, (channel, sensor) in enumerate(self.Module.sensors.items()):
+        for channel, sensor in self.module.sensors.items():
             # Initialize plotItem for each sensor name
-            self.ohm_time_plots[channel] = self.OhmTimePlot.plot([], [], pen=colors[i], name=sensor.name)
-        main_layout.addWidget(self.OhmTimePlot)
+            self.ohm_time_plots[channel] = self.OhmTimePlot.plot(
+                [], [], #x, y
+                pen=self.module.color_map[channel], 
+                name=sensor.name
+            )
+        readout_info_layout.addWidget(self.OhmTimePlot, stretch=1)
 
-        # >>  CALIBRATION PLOT and TABLE (Temp vs Ohms)
-        calib = qtw.QWidget()
-        calib_layout = qtw.QHBoxLayout(calib)
-
-        #initialize the calibration data
-        self.module_calib_data = {
-                sensor.name: SensorCalibData() for sensor in self.Module.sensors.values()
-            }
-        self.TempOhmPlot = pg.PlotWidget(title="Celcius Vs Ohms", background="#ebf0ee")
-        self.TempOhmPlot.addLegend()
-        self.TempOhmPlot.showGrid(x=True, y=True)
-        self.temp_ohm_plots = {}
-        for i, (channel, sensor) in enumerate(self.Module.sensors.items()):
-            self.temp_ohm_plots[channel] = self.TempOhmPlot.plot([], [], pen=colors[i], name=sensor.name)
-        calib_layout.addWidget(self.TempOhmPlot, stretch=1)
-        self.calib_input = CalibInput(self.Module)
-        calib_layout.addWidget(self.calib_input, stretch=0)
-        
-        self.calib_input.temp_inputted.connect(self.update_module_calib_data)
-        self.calib_input.temp_inputted.connect(self.update_temp_ohm_plot)
-
-        main_layout.addWidget(calib)
-        
         # >>  SERIAL MONITOR
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
-        main_layout.addWidget(self.serial_display)
+        readout_info_layout.addWidget(self.serial_display, stretch=0)
+
+        main_layout.addWidget(readout_info)
+
+        # >>  CALIBRATION INPUT/OUTPUT and Display
+        self.calib_io = CalibIO(self.module)
+        main_layout.addWidget(self.calib_io)
+
+        self.select_sensor_dropdown.currentIndexChanged.connect(
+            partial(self.select_sensor, self.OhmTimePlot, self.ohm_time_plots)
+        )
+        self.select_sensor_dropdown.currentIndexChanged.connect(
+            partial(self.select_sensor, self.calib_io.OhmTempPlot, self.calib_io.ohm_temp_plots)
+        )
 
         self.setCentralWidget(central_widget)
         #-------------------------End of Central Layout------------------------#
@@ -235,10 +158,10 @@ class MainWindow(qtw.QMainWindow):
         self.com_port.log_message[str].connect(self.log) 
         self.com_port.read[str].connect(self.log)
 
-        self.Module.write[str].connect(self.com_port._write)
-        self.com_port.read[str].connect(self.Module._read)
+        self.module.write[str].connect(self.com_port._write)
+        self.com_port.read[str].connect(self.module._read)
         #self.com_port.read[str].connect(self.update_ohm_time_plot)
-        self.Module.read[int].connect(self.update_ohm_time_plot)
+        self.module.read[int].connect(self.update_ohm_time_plot)
 
     def write_adc_action(self, name: str, adc_command: str) -> QAction:
         """
@@ -248,9 +171,17 @@ class MainWindow(qtw.QMainWindow):
         write_action.triggered.connect(partial(self.com_port._write, adc_command))
         return write_action
     
+    @Slot()
+    def download_data(self):
+        import json
+        #loop through sensors and make sensor calib data
+        output_dict = {sensor.name: sensor.calib_data for sensor in self.module.sensors.values()}
+        with open(f'./calibration_data_{self.module.name}_{datetime.now()}.json', 'w') as json_file:
+            json.dump(output_dict, json_file, indent=4, default=str)
+        
     @Slot(int)
     def update_ohm_time_plot(self, channel: int) -> None:
-        sensor = self.Module.sensors.get(channel)
+        sensor = self.module.sensors.get(channel)
         if sensor is not None and sensor.raw_adcs:
             t0 = sensor.times[0]
             elapsed_time = lambda t: (t - t0).total_seconds() / 60 
@@ -259,46 +190,20 @@ class MainWindow(qtw.QMainWindow):
             self.ohm_time_plots[channel].setData(
                 elapsed_times, sensor.ohms
             )
-    
-    @Slot(float)
-    def update_module_calib_data(self, T: float) -> None:
-        for channel, sensor in self.Module.sensors.items():
-            name = self.Module.channel_map[channel]
-            sensor_data = self.module_calib_data[name].data
 
-            sensor_data.append(CalibData(
-                timestamp=sensor.times[-1],
-                celcius=T,
-                raw_adc=sensor.raw_adcs[-1],
-                ohm=sensor.ohms[-1]
-            ))
-    
-    @Slot(float)
-    def update_temp_ohm_plot(self, T: float) -> None:
-        for channel in self.Module.sensors:
-            name = self.Module.channel_map[channel]
-            sensor_data = self.module_calib_data[name].data
-
-            #get a list of Temperatures and Ohms
-            Ts = [s.celcius for s in sensor_data]
-            ohms = [s.ohm for s in sensor_data]
-
-            self.temp_ohm_plots[channel].setData(ohms, Ts)
-
-        
     @Slot(int)
-    def select_sensor(self, index) -> None:
-        for _, live_plot in self.ohm_time_plots.items():
-            self.OhmTimePlot.removeItem(live_plot)       
+    def select_sensor(self, plot_widget, plots: dict, index: int) -> None:
+        for live_plot in plots:
+            plot_widget.removeItem(live_plot)       
         if index <= 0:
             #select all sensors
-            for _, live_plot in self.ohm_time_plots.items():
-               self.OhmTimePlot.addItem(live_plot)
+            for live_plot in plots:
+               plot_widget.addItem(live_plot)
         elif index > 0:
             #select singular sensor
             sensor_name = self.select_sensor_dropdown.currentText()
-            channel = self.Module.get_channel(sensor_name)
-            self.OhmTimePlot.addItem(self.ohm_time_plots[channel])
+            channel = self.module.get_channel(sensor_name)
+            plot_widget.addItem(plots[channel])
 
     @Slot()
     def live_readout_btn_text(self, checked: bool) -> None:
