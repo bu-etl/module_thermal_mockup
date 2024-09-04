@@ -231,6 +231,10 @@ class MainWindow(qtw.QMainWindow):
             #perfom linear fit
             m, b = np.polyfit(temps, ohms, 1)
 
+            #save fit parameters to calib data
+            sensor.calib_data['fit_slope'] = m
+            sensor.calib_data['fit_intercept'] = b
+
             # Plot the calibration data
             self.calib_fit_plots[channel] = self.calib_input.OhmTempPlot.plot(
                 temps, 
