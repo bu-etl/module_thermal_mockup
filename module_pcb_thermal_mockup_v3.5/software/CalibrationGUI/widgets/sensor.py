@@ -30,8 +30,6 @@ class Sensor(QWidget):
             'fit_intercept': None
         }
 
-        self.readout_interval = 1000 #ms
-
         # Initialize the data
         self.raw_adcs = []
         self.times = []
@@ -40,20 +38,6 @@ class Sensor(QWidget):
         # > meas
         # > ure 1 7250ff
         self.last_readout = ''
-
-        #have a spot to get the sensors calibration data
-
-    @Slot()
-    def live_readout(self, start: bool):
-        if start:
-            self.timer = QTimer()
-            self.timer.timeout.connect(self._write)
-            self.timer.start(self.readout_interval)  # Update every 1000 ms (1 second)
-        elif not start and hasattr(self, 'timer'):
-            self.timer.stop()
-        else:
-            #started live readout before timer
-            pass
 
     @Slot(str)
     def _read(self, data:str):

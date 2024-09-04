@@ -8,10 +8,12 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 #import data_models as dm
 from functools import partial
 from datetime import datetime
+import numpy as np
+
 import pyqtgraph as pg
 from widgets.com_port import ComPort
 from widgets.module import Module
-from widgets.calib_io import CalibIO
+from widgets.calib_input import CalibInput
 
 ENABLED_CHANNELS = [1, 3, 8]
 #ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -140,14 +142,20 @@ class MainWindow(qtw.QMainWindow):
         main_layout.addWidget(readout_info)
 
         # >>  CALIBRATION INPUT/OUTPUT and Display
-        self.calib_io = CalibIO(self.module)
-        main_layout.addWidget(self.calib_io)
+        self.calib_input = CalibInput(self.module)
+        main_layout.addWidget(self.calib_input)
 
+        # >> Fitting
+        self.fit_data_btn = qtw.QPushButton('Linear Fit')
+        self.fit_data_btn.clicked.connect(self.linear_calib_fit)
+        main_layout.addWidget(self.fit_data_btn)
+
+        # MAIN WINDOW CONNECTIONS
         self.select_sensor_dropdown.currentIndexChanged.connect(
             partial(self.select_sensor, self.OhmTimePlot, self.ohm_time_plots)
         )
         self.select_sensor_dropdown.currentIndexChanged.connect(
-            partial(self.select_sensor, self.calib_io.OhmTempPlot, self.calib_io.ohm_temp_plots)
+            partial(self.select_sensor, self.calib_input.OhmTempPlot, self.calib_input.ohm_temp_plots)
         )
 
         self.setCentralWidget(central_widget)
@@ -175,7 +183,14 @@ class MainWindow(qtw.QMainWindow):
     def download_data(self):
         import json
         #loop through sensors and make sensor calib data
-        output_dict = {sensor.name: sensor.calib_data for sensor in self.module.sensors.values()}
+        output_dict = {
+            sensor.name: {
+                **sensor.calib_data,
+                "all_raw_adcs": sensor.raw_adcs, 
+                "all_times": sensor.times
+            } 
+            for sensor in self.module.sensors.values()
+        }
         with open(f'./calibration_data_{self.module.name}_{datetime.now()}.json', 'w') as json_file:
             json.dump(output_dict, json_file, indent=4, default=str)
         
@@ -193,17 +208,41 @@ class MainWindow(qtw.QMainWindow):
 
     @Slot(int)
     def select_sensor(self, plot_widget, plots: dict, index: int) -> None:
-        for live_plot in plots:
+        for live_plot in plots.values():
             plot_widget.removeItem(live_plot)       
         if index <= 0:
             #select all sensors
-            for live_plot in plots:
+            for live_plot in plots.values():
                plot_widget.addItem(live_plot)
         elif index > 0:
             #select singular sensor
             sensor_name = self.select_sensor_dropdown.currentText()
             channel = self.module.get_channel(sensor_name)
             plot_widget.addItem(plots[channel])
+
+    @Slot()
+    def linear_calib_fit(self):
+        #get all the calib data
+        self.calib_fit_plots = {}
+        for channel, sensor in self.module.sensors.items():
+            temps = np.array(sensor.calib_data['temps'])
+            ohms = np.array(sensor.calib_data['ohms'])
+
+            #perfom linear fit
+            m, b = np.polyfit(temps, ohms, 1)
+
+            # Plot the calibration data
+            self.calib_fit_plots[channel] = self.calib_input.OhmTempPlot.plot(
+                temps, 
+                m * temps + b, 
+                label=f'Fit: y={m:.2f}x + {b:.2f}',
+                pen="black"
+            ) 
+
+            # Update the legend
+            self.calib_input.ohm_temp_plots[channel].setObjectName(f'{sensor.name}, Fit: y={m:.2f}x + {b:.2f}')
+            self.calib_input.OhmTempPlotLegend.removeItem(self.calib_input.ohm_temp_plots[channel])
+            self.calib_input.OhmTempPlotLegend.addItem(self.calib_input.ohm_temp_plots[channel], f'{sensor.name}, Fit: y={m:.2f}x + {b:.2f}')
 
     @Slot()
     def live_readout_btn_text(self, checked: bool) -> None:
