@@ -57,7 +57,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
-        self.com_port= ComPort(readout_interval=250)
+        self.com_port= ComPort(readout_interval=500)
 
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
@@ -91,7 +91,7 @@ class MainWindow(qtw.QMainWindow):
         main_layout = qtw.QVBoxLayout(central_widget)
 
         # >> LIVE READOUT BUTTON
-        self.module = Module('TM0001', ENABLED_CHANNELS, readout_interval=250)
+        self.module = Module('TM0001', ENABLED_CHANNELS, readout_interval=1)
 
         readout_btns = qtw.QWidget()
         readout_btn_layout = qtw.QHBoxLayout(readout_btns)
