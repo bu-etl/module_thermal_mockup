@@ -7992,7 +7992,7 @@
   (gr_text "3" (at 2.63 18.13) (layer "B.SilkS") (tstamp 44625b22-be8d-4b80-9575-286f966b1441)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
-  (gr_text "Fill JMPR1 for PCB heating\nFill JMPR2 for chip heating" (at 1.89 38.29 90) (layer "B.SilkS") (tstamp 462a2f1f-9016-49ef-8054-d5e26ab3af7f)
+  (gr_text "Fill JMPR1 for PCB heating\n" (at 1.21 38.25 90) (layer "B.SilkS") (tstamp 462a2f1f-9016-49ef-8054-d5e26ab3af7f)
     (effects (font (size 0.8 0.8) (thickness 0.15)) (justify mirror))
   )
   (gr_text "Channels:\n 1: ETROC3\n 2: LGAD1\n 3: ETROC1\n 4: LGAD2\n 5: ETROC2\n 6: LGAD3\n 7: LGAD4\n 8: ETROC4" (at 15.87 36.18) (layer "B.SilkS") (tstamp 53c7678e-bbf5-40c7-9977-e40934970f82)
