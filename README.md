@@ -9,6 +9,9 @@ In order for the control software to use the database you will need to add the c
 source setup.sh
 ```
 
+## Database Migrations (Alembic)
+
+
 ## DB Connection outside CERN
 Here are the steps of set
 
