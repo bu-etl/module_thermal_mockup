@@ -1,6 +1,13 @@
 # Module Pcb Thermal Mockup
 Previous version [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)
 
+# Thermal Mockup Database
+In order for the control software to use the database you will need to add the correct path for python. This is just so you can import it correctly,
+
+```
+# File inside module_pcb_thermal_mockup/database
+source setup.sh
+```
 
 ## DB Connection outside CERN
 Here are the steps of set
