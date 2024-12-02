@@ -79,6 +79,8 @@ engine = create_engine(DATABASE_URI, echo=False )
 #         elif run.id == 14:
 #             for data in run.data:
 #                 data.plate_position = 2
+
+#     session.commit()
 # -------------------------------------------------------------#
 
 # ------------ Checking data was inserted and the hybrid property ------------ #
@@ -188,3 +190,6 @@ engine = create_engine(DATABASE_URI, echo=False )
 #     thermal_mockup.calibration = mod_recalib
 
 #     session.commit()
+
+
+#-------------------------------------------------------------#

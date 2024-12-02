@@ -5,7 +5,7 @@ from sqlalchemy import String, Integer, Float, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import mapped_column, relationship, Mapped, DeclarativeBase
 from sqlalchemy.types import LargeBinary
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
 from datetime import datetime
 
 def create_all(engine) -> None:
@@ -38,6 +38,18 @@ class Module(Base):
 
     all_calibrations: Mapped[List["SensorCalibration"]] = relationship(back_populates="module")
     
+    def calib_map(self) -> dict:
+        return {
+            "E1": self.calibration.E1,
+            "E2": self.calibration.E2,
+            "E3": self.calibration.E3,
+            "E4": self.calibration.E4,
+            "L1": self.calibration.L1,
+            "L2": self.calibration.L2,
+            "L3": self.calibration.L3,
+            "L4": self.calibration.L4
+        }
+
     def __repr__(self) -> str:
         return f"Module(id={self.id!r}, name={self.name!r})"
 
@@ -48,13 +60,12 @@ class Data(Base):
     control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"), nullable=True)
     control_board_position: Mapped[int] = mapped_column(Integer, nullable=True)
     module_id: Mapped[int] = mapped_column(ForeignKey("module.id"))
-    module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # MAKE FALSE ===# up or down, relative to the beam pipe
-    plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # MAKE FALSE AFTER ===# 1, 2, 3, 4, etc...
+    module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # up or down, relative to the beam pipe
+    plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
 
     sensor: Mapped[str] = mapped_column(String(50))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     raw_adc: Mapped[str] = mapped_column(String(50))
-    celcius: Mapped[float] = mapped_column(Float)
 
     @hybrid_property
     def volts(self) -> float:
@@ -63,11 +74,14 @@ class Data(Base):
 
     @hybrid_property
     def ohms(self) -> float:
-        return 1E3 / (5 / self.volts_calc - 1)
+        return 1E3 / (5 / self.volts - 1)
     
     @hybrid_property
-    def celcius_calc(self) -> float:
-        return (self.ohms_calc - self.module.calibration.fit_ohms_intercept) / self.module.calibration.fit_ohms_over_celcius
+    def celcius(self) -> float:
+        calib_map = self.module.calib_map()
+        slope = calib_map[self.sensor].fit_ohms_over_celcius
+        intercept = calib_map[self.sensor].fit_ohms_intercept
+        return (self.ohms - intercept) / slope
     
     module: Mapped["Module"] = relationship(back_populates="data")
     run: Mapped["Run"] = relationship(back_populates="data")
@@ -81,7 +95,7 @@ class Run(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     mode: Mapped[str] = mapped_column(String(50), nullable=False, unique=False)
     comment: Mapped[str] =  mapped_column(String(500), nullable=True, unique=False)
-    cold_plate_id: Mapped[int] = mapped_column(ForeignKey("cold_plate.id"), nullable=True) # MAKE NULLABLE FALSE LATER
+    cold_plate_id: Mapped[int] = mapped_column(ForeignKey("cold_plate.id"), nullable=True)
     
     cold_plate: Mapped["ColdPlate"] = relationship(back_populates="run")
     data: Mapped[List["Data"]] = relationship(back_populates="run")
