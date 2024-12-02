@@ -5,6 +5,7 @@ from sqlalchemy import String, Integer, Float, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import mapped_column, relationship, Mapped, DeclarativeBase
 from sqlalchemy.types import LargeBinary
+from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 
 def create_all(engine) -> None:
@@ -28,9 +29,11 @@ class Module(Base):
     __tablename__ = "module"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-    calibration_id: Mapped[int] = mapped_column(ForeignKey("calibration.id"), nullable=False)
-
+    calibration_id: Mapped[int] = mapped_column(ForeignKey("module_calibration.id"), nullable=True) # MAKE FALSE
+    
+    calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module")
     data: Mapped[List["Data"]] = relationship(back_populates="module")
+    
     def __repr__(self) -> str:
         return f"Module(id={self.id!r}, name={self.name!r})"
 
@@ -41,7 +44,8 @@ class Data(Base):
     control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"), nullable=True)
     control_board_position: Mapped[int] = mapped_column(Integer, nullable=True)
     module_id: Mapped[int] = mapped_column(ForeignKey("module.id"))
-    plate_position: Mapped[int] = mapped_column(Integer, nullable=False)
+    module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # MAKE FALSE ===# up or down, relative to the beam pipe
+    plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # MAKE FALSE AFTER ===# 1, 2, 3, 4, etc...
 
     sensor: Mapped[str] = mapped_column(String(50))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
@@ -50,6 +54,19 @@ class Data(Base):
     ohms: Mapped[float] = mapped_column(Float) 
     celcius: Mapped[float] = mapped_column(Float)
 
+    @hybrid_property
+    def volts_calc(self) -> float:
+        num = int(str(self.raw_adc)[:-2],16)
+        return 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
+
+    @hybrid_property
+    def ohms_calc(self) -> float:
+        return 1E3 / (5 / self.volts_calc - 1)
+    
+    @hybrid_property
+    def celcius_calc(self) -> float:
+        return (self.ohms_calc - self.module.calibration.fit_ohms_intercept) / self.module.calibration.fit_ohms_over_celcius
+    
     module: Mapped["Module"] = relationship(back_populates="data")
     run: Mapped["Run"] = relationship(back_populates="data")
     control_board: Mapped["ControlBoard"] = relationship(back_populates="data")
@@ -62,8 +79,9 @@ class Run(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     mode: Mapped[str] = mapped_column(String(50), nullable=False, unique=False)
     comment: Mapped[str] =  mapped_column(String(500), nullable=True, unique=False)
-    cold_plate: Mapped[int] = mapped_column(ForeignKey("cold_plate.id"), nullable=True)
+    cold_plate_id: Mapped[int] = mapped_column(ForeignKey("cold_plate.id"), nullable=True) # MAKE NULLABLE FALSE LATER
     
+    cold_place: Mapped["ColdPlate"] = relationship(back_populates="run")
     data: Mapped[List["Data"]] = relationship(back_populates="run")
 
     def __repr__(self) -> str:
@@ -84,8 +102,10 @@ class ColdPlate(Base):
     #     4: "third row down from top, near the first inlet pipe",
     plate_image: Mapped[LargeBinary] = mapped_column(LargeBinary, nullable=True)
 
+    run: Mapped["Run"] = relationship(back_populates="cold_plate")
+
 class SensorCalibration(Base):
-    __tablename__ = "calibration"
+    __tablename__ = "sensor_calibration"
     id: Mapped[int] = mapped_column(primary_key=True)
 
     module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), nullable=False)
@@ -97,5 +117,34 @@ class SensorCalibration(Base):
     ohms: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=False)
     raw_adc: Mapped[ARRAY[str]] = mapped_column(ARRAY(String(50)), nullable=False)
     times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
+    all_raw_adcs: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
+    all_raw_times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
 
-    module: Mapped["Module"] = relationship(back_populates="calibration")
+    module: Mapped["Module"] = relationship(back_populates="calibrations")
+
+
+class ModuleCalibration(Base):
+    __tablename__ = "module_calibration"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    comment: Mapped[str] = mapped_column(String(500), nullable=True)
+
+    E1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    E2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    E3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    E4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+
+    L1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    L2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    L3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    L4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+
+    E1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E1_id])
+    E2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E2_id])
+    E3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E3_id])
+    E4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E4_id])
+
+    L1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L1_id])
+    L2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L2_id])
+    L3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L3_id])
+    L4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L4_id])
+

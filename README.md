@@ -2,7 +2,7 @@
 Previous version [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)
 
 # Thermal Mockup Database
-In order for the control software to use the database you will need to add the correct path for python. This is just so you can import it correctly,
+In order for the control software to use the database you will need to add the correct path for python. This is just so you can import it (like `from database import models`) correctly,
 
 ```
 # File inside module_pcb_thermal_mockup/database
@@ -11,6 +11,13 @@ source setup.sh
 
 ## Database Migrations (Alembic)
 
+Never delete an alembic migration script that has been used for a migration. This is so you can undo previous migrations and restore the db back to an older state. Here is an example of a migration coming from the [docs](https://alembic.sqlalchemy.org/en/latest/autogenerate.html).
+
+```alembic revision --autogenerate -m "Added account table"```
+
+Then once you are sure it is ok (always check it over),
+
+```alembic upgrade head```
 
 ## DB Connection outside CERN
 Here are the steps of set
