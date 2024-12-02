@@ -22,6 +22,8 @@ class ControlBoard(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
 
+    data: Mapped[List["Data"]] = relationship(back_populates="control_board")
+
     def __repr__(self) -> str:
         return f"ControlBoard(id={self.id!r}, name={self.name!r})"
 
@@ -33,6 +35,8 @@ class Module(Base):
     
     calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module")
     data: Mapped[List["Data"]] = relationship(back_populates="module")
+
+    all_calibrations: Mapped[List["SensorCalibration"]] = relationship(back_populates="module")
     
     def __repr__(self) -> str:
         return f"Module(id={self.id!r}, name={self.name!r})"
@@ -50,17 +54,15 @@ class Data(Base):
     sensor: Mapped[str] = mapped_column(String(50))
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     raw_adc: Mapped[str] = mapped_column(String(50))
-    volts: Mapped[float] = mapped_column(Float)
-    ohms: Mapped[float] = mapped_column(Float) 
     celcius: Mapped[float] = mapped_column(Float)
 
     @hybrid_property
-    def volts_calc(self) -> float:
-        num = int(str(self.raw_adc)[:-2],16)
+    def volts(self) -> float:
+        num = int(str(self.raw_adc)[:-2], 16)
         return 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
 
     @hybrid_property
-    def ohms_calc(self) -> float:
+    def ohms(self) -> float:
         return 1E3 / (5 / self.volts_calc - 1)
     
     @hybrid_property
@@ -81,7 +83,7 @@ class Run(Base):
     comment: Mapped[str] =  mapped_column(String(500), nullable=True, unique=False)
     cold_plate_id: Mapped[int] = mapped_column(ForeignKey("cold_plate.id"), nullable=True) # MAKE NULLABLE FALSE LATER
     
-    cold_place: Mapped["ColdPlate"] = relationship(back_populates="run")
+    cold_plate: Mapped["ColdPlate"] = relationship(back_populates="run")
     data: Mapped[List["Data"]] = relationship(back_populates="run")
 
     def __repr__(self) -> str:
@@ -104,6 +106,9 @@ class ColdPlate(Base):
 
     run: Mapped["Run"] = relationship(back_populates="cold_plate")
 
+    def __repr__(self) -> str:
+        return f"ColdPlate(id={self.id!r}, name={self.name!r})"
+
 class SensorCalibration(Base):
     __tablename__ = "sensor_calibration"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -113,15 +118,17 @@ class SensorCalibration(Base):
     fit_ohms_over_celcius: Mapped[float] = mapped_column(Float, nullable=False)
     fit_ohms_intercept: Mapped[float] = mapped_column(Float, nullable=False)
 
-    celcius: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=False)
-    ohms: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=False)
-    raw_adc: Mapped[ARRAY[str]] = mapped_column(ARRAY(String(50)), nullable=False)
-    times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
-    all_raw_adcs: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
-    all_raw_times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=False)
+    celcius: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=True)
+    ohms: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=True)
+    raw_adc: Mapped[ARRAY[str]] = mapped_column(ARRAY(String(50)), nullable=True)
+    times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=True)
+    all_raw_adcs: Mapped[ARRAY[str]] = mapped_column(ARRAY(String(50)), nullable=True)
+    all_raw_times: Mapped[ARRAY[DateTime]] = mapped_column(ARRAY(DateTime), nullable=True)
 
-    module: Mapped["Module"] = relationship(back_populates="calibrations")
+    module: Mapped["Module"] = relationship(back_populates="all_calibrations")
 
+    def __repr__(self) -> str:
+        return f"SensorCalibration(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, fit_ohms_over_celcius={self.fit_ohms_over_celcius!r}, fit_ohms_intercept={self.fit_ohms_intercept!r})"
 
 class ModuleCalibration(Base):
     __tablename__ = "module_calibration"
@@ -138,13 +145,16 @@ class ModuleCalibration(Base):
     L3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
     L4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
 
-    E1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E1_id])
-    E2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E2_id])
-    E3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E3_id])
-    E4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E4_id])
+    E1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E1_id], post_update=True)
+    E2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E2_id], post_update=True)
+    E3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E3_id], post_update=True)
+    E4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E4_id], post_update=True)
+    L1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L1_id], post_update=True)
+    L2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L2_id], post_update=True)
+    L3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L3_id], post_update=True)
+    L4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L4_id], post_update=True)
 
-    L1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L1_id])
-    L2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L2_id])
-    L3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L3_id])
-    L4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L4_id])
+    module: Mapped["Module"] = relationship(back_populates="calibration")   
 
+    def __repr__(self) -> str:
+        return f"ModuleCalibration(id={self.id!r}, comment={self.comment!r})"
