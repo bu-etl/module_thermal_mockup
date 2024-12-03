@@ -1,6 +1,41 @@
 # Module Pcb Thermal Mockup
 Previous version [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)
 
+# Run Config
+For each run you have to specify a config file in the [TOML format](https://toml.io/en/). 
+* keys are case insensitive
+* Cannot mix keys between the New Run example 1 and the Adding to Old Run exmaple 2. 
+
+#### Example 1: New Run
+```
+MODE = "DEBUG"
+COLD_PLATE = "epoxy_plate"
+COMMENT = "debugging software, with old thermal mockup"
+
+[[MODULES]]
+serial_number = "SN0001"
+cold_plate_position = 3
+orientation = "UP"
+control_board = "CB0003"
+control_board_position = 1
+
+# Add more [[modules]] with the tablename in double brackets
+```
+
+#### Example 2: Adding to Old Run
+```
+reuse_run_id = 4 # mode, plate and comment specified in db
+
+[[MODULES]]
+serial_number = "SN0001"
+cold_plate_position = 3
+orientation = "UP"
+control_board = "CB0003"
+control_board_position = 1
+```
+
+
+
 # Thermal Mockup Database
 In order for the control software to use the database you will need to add the correct path for python. This is just so you can import it (like `from database import models`) correctly,
 
