@@ -11,9 +11,9 @@ from PySide6 import QtCore
 from PySide6.QtCore import Qt
 from sqlalchemy import create_engine, select, Engine
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
-from env import DATABASE_URI
+from database.env import DATABASE_URI
 import argparse
-import data_models as dm
+import database.models as dm
 from typing import Literal
 from functools import partial
 
