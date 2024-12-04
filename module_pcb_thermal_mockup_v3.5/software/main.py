@@ -64,7 +64,6 @@ def init_db_run(session, run_id: int|None = None, comment: str|None = None, mode
     else:
         raise ValueError("Please give both a comment and mode for a this new run.")
 
-
 class MainWindow(qtw.QMainWindow):
     def __init__(self, args: argparse.Namespace):
         super().__init__()
