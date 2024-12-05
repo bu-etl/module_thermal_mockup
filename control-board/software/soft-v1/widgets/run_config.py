@@ -236,27 +236,34 @@ class RunConfigDropdown(qtw.QWidget):
         else:
             cold_plate = self.query_cold_plate(run_config.cold_plate)
             if cold_plate is not None:
+                # should make a modal asking are you sure you would like to start a new run?
+
                 self.run = dm.Run(
                     cold_plate = cold_plate,
                     mode = run_config.mode,
                     comment = run_config.comment
                 )
                 self.session.add(self.run)
-                print("COMMITTED TO DB!!")
-                #self.session.commit()
-        if self.run is not None:
+                
+        if self.run is None:
+            # if no run then a config error happened
+            return
+        
+        # need no autoflush since we do not commit self.run yet if it is a new run
+        with self.session.no_autoflush:
             self.modules = [self.query_module(mod.serial_number) for mod in run_config.modules]
-            if None not in self.modules:
-                self.load_run_info(self.run)
-                self.load_modules(run_config.modules)
-                self.load_image(self.run)
+            if None in self.modules:
+                return
+            self.load_run_info(self.run)
+            self.load_modules(run_config.modules)
+            self.load_image(self.run)
         
     def load_run_info(self, run: dm.Run) -> None:
         # Centered put the Run ID = ... then mode then comment
         run_info = qtw.QGroupBox("Run Info")
         run_info_layout = qtw.QVBoxLayout(run_info)
         run_info_layout.setAlignment(Qt.AlignCenter)
-        run_info_layout.addWidget(qtw.QLabel(f"Run ID = {run.id}"))
+        run_info_layout.addWidget(qtw.QLabel(f"Run ID = {run.id if run.id else 'NEW RUN'}"))
         run_info_layout.addWidget(qtw.QLabel(f"Mode: {run.mode}"))
         run_info_layout.addWidget(qtw.QLabel(f"Comment: {run.comment}"))
         self.container_layout.addWidget(run_info)
