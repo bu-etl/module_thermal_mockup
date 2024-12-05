@@ -82,18 +82,27 @@ class RunConfigModal(qtw.QDialog):
         self.session = db_session
 
         self.setWindowTitle("Set Run Configuration")
-        QBtn = (
-            qtw.QDialogButtonBox.Ok | qtw.QDialogButtonBox.Cancel
-        )
-
-        self.buttonBox = qtw.QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
 
         self.main_layout = qtw.QVBoxLayout(self)
+
         self.config_file_btn = qtw.QPushButton("Select Config File")
         self.config_file_btn.clicked.connect(self.load_run_config)
         self.main_layout.addWidget(self.config_file_btn)
+
+        self.config_preview = qtw.QWidget()
+        self.config_preview_layout = qtw.QVBoxLayout()
+
+        self.config_preview.setLayout(self.config_preview_layout)
+        self.main_layout.addWidget(self.config_preview)
+        
+        QBtn = (
+            qtw.QDialogButtonBox.Ok | qtw.QDialogButtonBox.Cancel
+        )
+        self.buttonBox = qtw.QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.main_layout.addWidget(self.buttonBox)
+
 
     @Slot()
     def load_run_config(self) -> None:
@@ -151,7 +160,7 @@ class RunConfigModal(qtw.QDialog):
         run_info_layout.addWidget(qtw.QLabel(f"Run ID = {run.id if run.id else 'NEW RUN'}"))
         run_info_layout.addWidget(qtw.QLabel(f"Mode: {run.mode}"))
         run_info_layout.addWidget(qtw.QLabel(f"Comment: {run.comment}"))
-        self.main_layout.addWidget(run_info)
+        self.config_preview_layout.addWidget(run_info)
     
     def load_modules(self, modules:list[ModuleConfig]) -> None:
         # make a small square that contains the module serial number and plate position
@@ -175,7 +184,7 @@ class RunConfigModal(qtw.QDialog):
                 modules_layout.addWidget(module_info, i, j)
 
         modules_widget.setLayout(modules_layout)
-        self.main_layout.addWidget(modules_widget)
+        self.config_preview_layout.addWidget(modules_widget)
 
     def load_image(self, run) -> None:
         pixmap = QPixmap()
@@ -186,7 +195,7 @@ class RunConfigModal(qtw.QDialog):
         label.setScaledContents(True)  # Scale the image to fit the label size
 
         # Add the label to your layout or display it as needed
-        self.main_layout.addWidget(label)
+        self.config_preview_layout.addWidget(label)
 
     def query_run(self, run_id: int) -> dm.Run:
         run = self.session.execute(

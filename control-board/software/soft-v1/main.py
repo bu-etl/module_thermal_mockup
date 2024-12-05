@@ -28,18 +28,15 @@ class MainWindow(qtw.QMainWindow):
         self.run_menu = self.menu.addMenu('Run')
         
         # What an action is -> https://www.pythonguis.com/tutorials/pyside6-actions-toolbars-menus/
+        run_config_action = QAction('Choose Run Config', self)
+        run_config_action.triggered.connect(self.run_config_modal)
+        self.run_menu.addAction(run_config_action)
+
         exit_action = QAction('Exit', self)
         exit_action.triggered.connect(self._close)
         exit_action.setShortcut('Ctrl+Q')
         self.run_menu.addAction(exit_action)
 
-        restart_action = QAction('Restart', self)
-        #restart_action.triggered.connnect(self.TODO)
-        self.run_menu.addAction(restart_action)
-
-        run_config_action = QAction('Run Config', self)
-        run_config_action.triggered.connect(self.run_config_modal)
-        self.run_menu.addAction(run_config_action)
 
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
