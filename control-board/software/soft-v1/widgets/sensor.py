@@ -9,14 +9,14 @@ class Sensor(QWidget):
     Slots: read, _write, live_readout
     """
     write = Signal(str) # Signal to propogate to Sensors
-    read = Signal(int)
+    read = Signal(str)
 
-    def __init__(self, name: str, channel: int):
+    def __init__(self, name: str, firmware_interface):
         super(Sensor, self).__init__()
 
         self.name = name
-        self.channel = channel
-        self.measure_adc_command = f"measure {self.channel}"
+        self.firmware_interface = firmware_interface
+        self.measure_adc_command = self.firmware_interface.write_sensor(self.name)
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
         self.raw_adc_length = 6 #length of this string 72a4ff
 
@@ -59,7 +59,7 @@ class Sensor(QWidget):
         
         #check if command is in data
         if self.measure_adc_command in data and len(data) == expected_data_length:
-            raw_adc = data.split()[-1] #last one will always be raw_adc
+            raw_adc = self.firmware_interface.read_sensor(data)
             if raw_adc != '0' or not raw_adc:
                 #sometimes raw_adc can give 0, skip append for these
                 self.raw_adcs.append(raw_adc)
@@ -67,7 +67,7 @@ class Sensor(QWidget):
             self.measurement_pending = False
             
             #for more efficient plot updates
-            self.read.emit(self.channel)
+            self.read.emit(self.name)
         #for checking split lines on arduino
         self.last_readout = data
 
@@ -90,3 +90,6 @@ class Sensor(QWidget):
     
     def temps(self):
         pass
+
+    def __repr__(self):
+        return f"Sensor(name={self.name!r})"

@@ -118,24 +118,23 @@ class RunConfigModal(qtw.QDialog):
         
         with open(file_path, 'rb') as f:
             try:
-                run_config = RunConfig.model_validate(tomllib.load(f))
+                self.run_config = RunConfig.model_validate(tomllib.load(f))
             except ValidationError as error:
-                print(error.errors())
                 self.raise_crit_message('Run Config File Error', str([e['msg'] for e in error.errors()]))
                 return
             
         self.run = None
-        if run_config.reuse_run_id is not None:
-            self.run = self.query_run(run_config.reuse_run_id)
+        if self.run_config.reuse_run_id is not None:
+            self.run = self.query_run(self.run_config.reuse_run_id)
         else:
-            cold_plate = self.query_cold_plate(run_config.cold_plate)
+            cold_plate = self.query_cold_plate(self.run_config.cold_plate)
             if cold_plate is not None:
                 # should make a modal asking are you sure you would like to start a new run?
 
                 self.run = dm.Run(
                     cold_plate = cold_plate,
-                    mode = run_config.mode,
-                    comment = run_config.comment
+                    mode = self.run_config.mode,
+                    comment = self.run_config.comment
                 )
                 self.session.add(self.run)
                 
@@ -145,11 +144,11 @@ class RunConfigModal(qtw.QDialog):
         
         # need no autoflush since we do not commit self.run yet if it is a new run
         with self.session.no_autoflush:
-            self.modules = [self.query_module(mod.serial_number) for mod in run_config.modules]
+            self.modules = [self.query_module(mod.serial_number) for mod in self.run_config.modules]
             if None in self.modules:
                 return
             self.load_run_info(self.run)
-            self.load_modules(run_config.modules)
+            self.load_modules(self.run_config.modules)
             self.load_image(self.run)
         
     def load_run_info(self, run: dm.Run) -> None:

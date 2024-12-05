@@ -1,0 +1,75 @@
+"""
+These classes tell you how to read sensor data from a module
+based on different firmware versions
+"""
+from abc import ABC, abstractmethod
+class ModuleFirmwareInterface(ABC):
+    """Abstract base class to enforce the read and write methods of inherited classes"""
+    
+    @abstractmethod
+    def read_sensor(self, adc_value: str) -> str:
+        """Read adc output string"""
+        ...
+
+    @abstractmethod
+    def write_sensor(self, sensor_name: str) -> str:
+        """Write ADC command"""
+        ...
+
+    @abstractmethod
+    def write_sensors(self, sensor_names: list[str]) -> str:
+        """measures all sensors on module"""
+        ...
+
+class ControlBoardV1(ModuleFirmwareInterface):
+    def __init__(self, control_board_pos: int):
+        self.control_board_pos = control_board_pos
+        self.sensor_map = {
+            'E3': 1,
+            'L1': 2,
+            'E1': 3,
+            'L2': 4,
+            'E2': 5,
+            'L3': 6,
+            'L4': 7,
+            'E4': 8
+        }
+        """
+        TM -ab, TM -abcd, TM measure 1
+        """
+    def read_sensor(self, adc_value: str) -> str:
+        """An example is "TM -a measure 1 72a4ff" """
+        return adc_value.split()[-1]
+
+    def write_sensor(self, sensor_name: str) -> str:
+        """An example is "TM -a measure 1" """
+        return f"TM -{self.control_board_pos} measure {self.sensor_map[sensor_name]}"
+
+    def write_sensors(self, sensor_names: list[str]) -> str:
+        channels = [str(self.sensor_map[sensor_name]) for sensor_name in sensor_names]
+        return f"TM -{self.control_board_pos} measure {' '.join(channels)}"
+
+class ThermalMockupV2(ModuleFirmwareInterface):
+    def __init__(self):
+        self.sensor_map = {
+            'E3': 1,
+            'L1': 2,
+            'E1': 3,
+            'L2': 4,
+            'E2': 5,
+            'L3': 6,
+            'L4': 7,
+            'E4': 8
+        }
+
+    def read_sensor(self, adc_value: str) -> str:
+        """An example is "measure 1 72a4ff" """
+        return adc_value.split()[-1]
+
+    def write_sensor(self, sensor_name: str) -> str:
+        #would need to map sensor name to channel
+        return f"measure {self.sensor_map[sensor_name]}"
+
+    def write_sensors(self, sensor_names: list[str]) -> str:
+        channels = [str(self.sensor_map[sensor_name]) for sensor_name in sensor_names]
+        return f"measure {' '.join(channels)}"
