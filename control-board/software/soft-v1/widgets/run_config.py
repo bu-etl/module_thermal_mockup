@@ -9,8 +9,16 @@ from pydantic import ValidationError
 import os
 import database.models as dm
 from sqlalchemy import select
+from itertools import zip_longest
 
 PATH_OF_SCRIPT:str =  os.path.dirname(os.path.abspath(__file__))
+
+def gridded_list(array: list, n_cols: int) -> list[tuple]:
+    """
+    Reshape a list into n_cols * n array with Nones padded 
+    https://stackoverflow.com/questions/57645094/reshaping-python-array-for-unknown-rows-using-1-filling-remaining-spaces-with
+    """
+    return list(zip_longest(*[iter(array)] * n_cols))
 
 # ----------------------- PYDANTIC MODELS ------------------------------#
 #GUI for control board
@@ -56,6 +64,15 @@ class RunConfig(CaseInsensitiveModel):
         ), "Invalid configuration: either reuse_run_id should be specified with no other keys, or mode and cold_plate should be specified without reuse_run_id."
         return self
     
+    @field_validator('modules',mode='after')
+    @classmethod
+    def multi_module_need_control_board(cls, v: list[ModuleConfig]):
+        assert len(v) > 0, "At least one module must be provided."
+        if len(v) > 1:
+            for mod in v:
+                assert mod.control_board is not None, f"Please provide the control board used for this module ({mod.serial_number}) in this multi module setup"
+                assert mod.control_board_position is not None, f"Please provide the position on the control board for this module ({mod.serial_number}) in this multi module setup"
+        return v
 #=============== Widgets ===============#
 
 #------ Dropdown Widget from online------#
@@ -86,17 +103,11 @@ class Header(qtw.QWidget):
         # Create a background label with a specific style sheet
         background = qtw.QLabel()
         background.setStyleSheet(
-            "QLabel{ background-color: rgb(93, 93, 93); padding-top: -20px; border-radius:2px}")
+            "QLabel{ background-color: rgb(218, 218, 218); padding-top: -20px; border-radius:2px}")
 
         # Create a widget and a layout to hold the icon and label
         widget = qtw.QWidget()
         layout = qtw.QHBoxLayout(widget)
-
-        # Create an icon label and set its text and style sheet
-        # self.icon = QLabel()
-        # self.icon.setText(self.expand_ico)
-        # self.icon.setStyleSheet(
-        #     "QLabel { font-weight: bold; font-size: 20px; color: #000000 }")
         
         self.icon = QSvgWidget(self.expand_icon_path)
         self.icon.setFixedSize(20, 20)  # Adjust size as needed
@@ -183,21 +194,6 @@ class Container(qtw.QWidget):
 #---------------------------------------#
 
 # -------- My Run Config Widget --------#
-def run_config_preview(db_session, run_config: RunConfig) -> qtw.QWidget:
-    # run info preview
-
-    # picture preview
-
-    # module preview
-
-    #----> lets just start by dumping to a text box
-
-    display = qtw.QPlainTextEdit()
-    display.setReadOnly(True)
-
-    display.appendPlainText(str(run_config))
-    return display
-
 
 class RunConfigDropdown(qtw.QWidget):
     def __init__(self, db_session):
@@ -206,7 +202,7 @@ class RunConfigDropdown(qtw.QWidget):
         self.session = db_session
 
         main_layout = qtw.QVBoxLayout(self)
-        container = Container("Run Configuration", color_background=True)
+        container = Container("Run Configuration", color_background=False)
         main_layout.addWidget(container)
 
         self.container_layout = qtw.QGridLayout(container.contentWidget)
@@ -215,7 +211,7 @@ class RunConfigDropdown(qtw.QWidget):
         self.container_layout.addWidget(self.config_file_btn)
 
     @Slot()
-    def load_run_config(self):
+    def load_run_config(self) -> None:
         file_path, _ = qtw.QFileDialog.getOpenFileName(
             self, 
             "Select Config File", 
@@ -229,9 +225,11 @@ class RunConfigDropdown(qtw.QWidget):
         with open(file_path, 'rb') as f:
             try:
                 run_config = RunConfig.model_validate(tomllib.load(f))
-            except ValidationError as e:
-                self.raise_crit_message('Run Config File Error', str(e))
-
+            except ValidationError as error:
+                print(error.errors())
+                self.raise_crit_message('Run Config File Error', str([e['msg'] for e in error.errors()]))
+                return
+            
         self.run = None
         if run_config.reuse_run_id is not None:
             self.run = self.query_run(run_config.reuse_run_id)
@@ -247,12 +245,13 @@ class RunConfigDropdown(qtw.QWidget):
                 print("COMMITTED TO DB!!")
                 #self.session.commit()
         if self.run is not None:
-            self.modules = [self.query_module(mod_sn) for mod_sn in run_config.modules]
-            self.load_run_info(self.run)
-            self.load_modules(run_config.modules)
-            self.load_image(self.run)
+            self.modules = [self.query_module(mod.serial_number) for mod in run_config.modules]
+            if None not in self.modules:
+                self.load_run_info(self.run)
+                self.load_modules(run_config.modules)
+                self.load_image(self.run)
         
-    def load_run_info(self, run: dm.Run):
+    def load_run_info(self, run: dm.Run) -> None:
         # Centered put the Run ID = ... then mode then comment
         run_info = qtw.QGroupBox("Run Info")
         run_info_layout = qtw.QVBoxLayout(run_info)
@@ -261,19 +260,30 @@ class RunConfigDropdown(qtw.QWidget):
         run_info_layout.addWidget(qtw.QLabel(f"Mode: {run.mode}"))
         run_info_layout.addWidget(qtw.QLabel(f"Comment: {run.comment}"))
         self.container_layout.addWidget(run_info)
-      
-    def load_modules(self, modules:list[ModuleConfig]):
+    
+    def load_modules(self, modules:list[ModuleConfig]) -> None:
         # make a small square that contains the module serial number and plate position
         # for each module put it side by side
-        db_modules = [self.query_module(mod.serial_number) for mod in modules]
-        if None not in db_modules:
-            for i, module in enumerate(modules):
-                module_info = qtw.QGroupBox(f"Module {i+1}")
+        modules_layout = qtw.QGridLayout()
+        modules_widget = qtw.QWidget()
+
+        # lets do 5 * n size grid
+        n_cols = 5
+        modules = gridded_list(modules, n_cols)
+
+        for i, row in enumerate(modules):
+            for j, module in enumerate(row):
+                if module is None:
+                    continue
+                module_info = qtw.QGroupBox(f"Module {n_cols*i+j+1}")
                 module_info_layout = qtw.QVBoxLayout(module_info)
                 module_info_layout.setAlignment(Qt.AlignCenter)
                 module_info_layout.addWidget(qtw.QLabel(f"Serial Number: {module.serial_number}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Plate Position: {module.cold_plate_position}"))
-                self.container_layout.addWidget(module_info)
+                modules_layout.addWidget(module_info, i, j)
+
+        modules_widget.setLayout(modules_layout)
+        self.container_layout.addWidget(modules_widget)
 
     def load_image(self, run) -> None:
         pixmap = QPixmap()
@@ -285,7 +295,6 @@ class RunConfigDropdown(qtw.QWidget):
 
         # Add the label to your layout or display it as needed
         self.container_layout.addWidget(label)
-
 
     def query_run(self, run_id: int) -> dm.Run:
         run = self.session.execute(
@@ -299,7 +308,6 @@ class RunConfigDropdown(qtw.QWidget):
                 "Not In DB Error",
                 f"This RUN_ID={run_id} does not exist in the database and thus cannot be loaded"
             )
-        
         return run
 
     def query_cold_plate(self, name: str):
