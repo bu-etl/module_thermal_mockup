@@ -8,32 +8,38 @@ For each run you have to specify a config file in the [TOML format](https://toml
 
 #### Example 1: New Run
 ```
+[RUN]
+#reuse_run_id = 4
 MODE = "DEBUG"
-COLD_PLATE = "epoxy_plate"
+COLD_PLATE = "Pretty Double Loop Solder Plate"
 COMMENT = "debugging software, with old thermal mockup"
 
-[[MODULES]]
-serial_number = "SN0001"
-cold_plate_position = 3
-orientation = "UP"
-control_board = "CB0003"
-control_board_position = 1
-
-# Add more [[modules]] with the tablename in double brackets
-```
-
-#### Example 2: Adding to Old Run
-```
-reuse_run_id = 4 # mode, plate and comment specified in db
+[MICROCONTROLLER]
+firmware_version = "Thermal Mockup V2"
+port = "ttyACM0"
 
 [[MODULES]]
-serial_number = "SN0001"
+serial_number = "TM0001"
 cold_plate_position = 3
 orientation = "UP"
-control_board = "CB0003"
-control_board_position = 1
+disabled_sensors = ['E2', 'L1', 'L2', 'L3', 'L4']
 ```
 
+#### Example 1: Reuse Run
+```
+[RUN]
+reuse_run_id = 4
+
+[MICROCONTROLLER]
+firmware_version = "Thermal Mockup V2"
+port = "ttyACM0"
+
+[[MODULES]]
+serial_number = "TM0001"
+cold_plate_position = 3
+orientation = "UP"
+disabled_sensors = ['E2', 'L1', 'L2', 'L3', 'L4']
+```
 
 
 # Thermal Mockup Database
