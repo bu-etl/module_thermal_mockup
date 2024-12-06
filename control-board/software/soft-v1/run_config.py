@@ -10,8 +10,10 @@ import os
 import database.models as dm
 from sqlalchemy import select
 from itertools import zip_longest
+from firmware_interface import available_firmwares
 
 PATH_OF_SCRIPT:str =  os.path.dirname(os.path.abspath(__file__))
+AVAILABLE_FIRMWARES:list[str] = available_firmwares()
 
 def gridded_list(array: list, n_cols: int) -> list[tuple]:
     """
@@ -42,15 +44,19 @@ class ModuleConfig(CaseInsensitiveModel):
     orientation: Optional[Literal['up', 'down']] = None
     control_board: Optional[str] = None
     control_board_position: Optional[int] = Field(None, ge=1, le=4)
-    
+    disabled_sensors: list[Literal['E1', 'E2', 'E3', 'E4', 'L1', 'L2', 'L3', 'L4']] = []
+
     _lowercase_orientation = field_validator('orientation', mode='before')(lower_validator)
 
-class RunConfig(CaseInsensitiveModel):
+class MicroControllerConfig(CaseInsensitiveModel):
+    firmware_version: Literal[*AVAILABLE_FIRMWARES]
+    port: str
+
+class Run(CaseInsensitiveModel):
     reuse_run_id: Optional[PositiveInt]  = None
     mode: Optional[str]                  = None
     cold_plate: Optional[str]            = None
-    comment: Optional[str]               = None
-    modules: list[ModuleConfig]
+    comment: Optional[str]               = None 
 
     _uppercase_mode = field_validator('mode', mode='before')(upper_validator)
 
@@ -64,6 +70,12 @@ class RunConfig(CaseInsensitiveModel):
         ), "Invalid configuration: either reuse_run_id should be specified with no other keys, or mode and cold_plate should be specified without reuse_run_id."
         return self
     
+
+class RunConfig(CaseInsensitiveModel):
+    run: Run
+    microcontroller: MicroControllerConfig
+    modules: list[ModuleConfig]
+
     @field_validator('modules',mode='after')
     @classmethod
     def multi_module_need_control_board(cls, v: list[ModuleConfig]):
@@ -73,6 +85,7 @@ class RunConfig(CaseInsensitiveModel):
                 assert mod.control_board is not None, f"Please provide the control board used for this module ({mod.serial_number}) in this multi module setup"
                 assert mod.control_board_position is not None, f"Please provide the position on the control board for this module ({mod.serial_number}) in this multi module setup"
         return v
+
 #=============== Widgets ===============#
 
 class RunConfigModal(qtw.QDialog):
@@ -124,17 +137,16 @@ class RunConfigModal(qtw.QDialog):
                 return
             
         self.run = None
-        if self.run_config.reuse_run_id is not None:
-            self.run = self.query_run(self.run_config.reuse_run_id)
+        if self.run_config.run.reuse_run_id is not None:
+            self.run = self.query_run(self.run_config.run.reuse_run_id)
         else:
-            cold_plate = self.query_cold_plate(self.run_config.cold_plate)
+            cold_plate = self.query_cold_plate(self.run_config.run.cold_plate)
             if cold_plate is not None:
                 # should make a modal asking are you sure you would like to start a new run?
-
                 self.run = dm.Run(
                     cold_plate = cold_plate,
-                    mode = self.run_config.mode,
-                    comment = self.run_config.comment
+                    mode = self.run_config.run.mode,
+                    comment = self.run_config.run.comment
                 )
                 self.session.add(self.run)
                 
@@ -148,6 +160,7 @@ class RunConfigModal(qtw.QDialog):
             if None in self.modules:
                 return
             self.load_run_info(self.run)
+            self.load_microcontroller_info(self.run_config.microcontroller)
             self.load_modules(self.run_config.modules)
             self.load_image(self.run)
         
@@ -159,6 +172,16 @@ class RunConfigModal(qtw.QDialog):
         run_info_layout.addWidget(qtw.QLabel(f"Run ID = {run.id if run.id else 'NEW RUN'}"))
         run_info_layout.addWidget(qtw.QLabel(f"Mode: {run.mode}"))
         run_info_layout.addWidget(qtw.QLabel(f"Comment: {run.comment}"))
+        self.config_preview_layout.addWidget(run_info)
+
+    def load_microcontroller_info(self, microcontroller_config: MicroControllerConfig) -> None:
+        # Centered put the Run ID = ... then mode then comment
+        run_info = qtw.QGroupBox("Microcontroller Config")
+        run_info_layout = qtw.QVBoxLayout(run_info)
+        run_info_layout.setAlignment(Qt.AlignCenter)
+        run_info_layout.addWidget(qtw.QLabel(f"Firmware: {microcontroller_config.firmware_version}"))
+        run_info_layout.addWidget(qtw.QLabel(f"Port: {microcontroller_config.port}"))
+
         self.config_preview_layout.addWidget(run_info)
     
     def load_modules(self, modules:list[ModuleConfig]) -> None:
@@ -180,6 +203,9 @@ class RunConfigModal(qtw.QDialog):
                 module_info_layout.setAlignment(Qt.AlignCenter)
                 module_info_layout.addWidget(qtw.QLabel(f"Serial Number: {module.serial_number}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Plate Position: {module.cold_plate_position}"))
+                module_info_layout.addWidget(qtw.QLabel(f"Orientation: {module.orientation}"))
+                module_info_layout.addWidget(qtw.QLabel(f"Disabled Sensors: {module.disabled_sensors}"))
+
                 modules_layout.addWidget(module_info, i, j)
 
         modules_widget.setLayout(modules_layout)

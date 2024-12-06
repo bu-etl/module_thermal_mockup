@@ -22,6 +22,7 @@ class ModuleFirmwareInterface(ABC):
         ...
 
 class ControlBoardV1(ModuleFirmwareInterface):
+    __firmware_name__ = "Control Board V1"
     def __init__(self, control_board_pos: int):
         self.control_board_pos = control_board_pos
         self.sensor_map = {
@@ -50,6 +51,8 @@ class ControlBoardV1(ModuleFirmwareInterface):
         return f"TM -{self.control_board_pos} measure {' '.join(channels)}"
 
 class ThermalMockupV2(ModuleFirmwareInterface):
+    __firmware_name__ = "Thermal Mockup V2"
+
     def __init__(self):
         self.sensor_map = {
             'E3': 1,
@@ -73,3 +76,12 @@ class ThermalMockupV2(ModuleFirmwareInterface):
     def write_sensors(self, sensor_names: list[str]) -> str:
         channels = [str(self.sensor_map[sensor_name]) for sensor_name in sensor_names]
         return f"measure {' '.join(channels)}"
+    
+
+def available_firmwares():
+    return [subclass.__firmware_name__ for subclass in ModuleFirmwareInterface.__subclasses__()]
+
+def firmware_select(firmware_name: str) -> ModuleFirmwareInterface:
+    for subclass in ModuleFirmwareInterface.__subclasses__():
+        if subclass.__firmware_name__ == firmware_name:
+            return subclass

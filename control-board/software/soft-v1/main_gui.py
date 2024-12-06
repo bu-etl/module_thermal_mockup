@@ -7,9 +7,9 @@ from database.env import DATABASE_URI
 import database.models as dm
 import pyqtgraph as pg
 import sys
-from widgets.run_config import RunConfigModal
-from widgets.com_port import ComPort
-from widgets.module import Module
+from run_config import RunConfigModal
+from com_port import ComPort
+from module import Module
 import firmware_interface as fw
 from functools import partial
 
@@ -126,7 +126,6 @@ class MainWindow(qtw.QMainWindow):
     def run_config_modal(self):
         run_config_modal = RunConfigModal(self.session)
         if run_config_modal.exec():
-            print("Success!")
             # load all the config data! This even means previous data
             
             # commit new run if new run

@@ -1,7 +1,6 @@
 import PySide6.QtWidgets as qtw
 from PySide6.QtSerialPort import QSerialPort, QSerialPortInfo
 from PySide6.QtCore import Signal, Slot, QIODevice, QTextStream, QTimer
-import time
 
 class ComPort(qtw.QComboBox):
     """
