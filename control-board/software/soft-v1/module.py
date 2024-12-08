@@ -1,36 +1,16 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Signal, Slot, QTimer
 from run_config import ModuleConfig
-from datetime import datetime
-import numpy as np
+from firmware_interface import ModuleFirmwareInterface
+SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4"]
 
-
-class Sensor(QWidget):
-    """
-    Signals: write \n
-    Slots: read, _write, live_readout
-    """
-    write = Signal(str) # Signal to propogate to Sensors
-    read = Signal(str)
-
-    def __init__(self, name: str, firmware_interface):
-        super(Sensor, self).__init__()
-
+class Sensor:
+    def __init__(self, name: str, firmware_interface: ModuleFirmwareInterface):
         self.name = name
         self.firmware_interface = firmware_interface
         self.measure_adc_command = self.firmware_interface.write_sensor(self.name)
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
         self.raw_adc_length = 6 #length of this string 72a4ff
-
-        #calibration data
-        self.calib_data = {
-            'temps': [],
-            'times': [],
-            'ohms': [],
-            'raw_adcs': [],
-            'fit_slope': None,
-            'fit_intercept': None
-        }
 
         # Initialize the data
         self.raw_adcs = []
@@ -41,11 +21,12 @@ class Sensor(QWidget):
         # > ure 1 7250ff
         self.last_readout = ''
 
-    @Slot(str)
-    def _read(self, data:str):
+    def read_adc(self, data:str) -> None | str:
         """
         Reads the output from the ADC, form is something like "measure 1 72a4ff"
         """
+        validated_adc_value = None
+
         #first check if data was split over two lines, sometimes happens
         merged_line_data = self.last_readout + data
         expected_data_length = len(self.measure_adc_command) + self.raw_adc_length + 1 #+1 for the space between "measure 1" and raw_adc, total is 16 
@@ -64,55 +45,37 @@ class Sensor(QWidget):
             raw_adc = self.firmware_interface.read_sensor(data)
             if raw_adc != '0' or not raw_adc:
                 #sometimes raw_adc can give 0, skip append for these
-                self.raw_adcs.append(raw_adc)
-                self.times.append(datetime.now())
+                validated_adc_value = raw_adc
+
             self.measurement_pending = False
             
-            #for more efficient plot updates
-            self.read.emit(self.name)
         #for checking split lines on arduino
         self.last_readout = data
 
-    @Slot()
-    def _write(self):
-        """
-        Writes to the ADC, using commands understood by the firmware.
-        """
-        if not self.measurement_pending:
-            self.write.emit(self.measure_adc_command)
-            self.measurement_pending = True
-
-    @property
-    def ohms(self) -> np.ndarray[float]:
-        #last two in raw_adc string always ff
-        nums = np.array([int(str(raw_adc)[:-2],16) for raw_adc in self.raw_adcs])
-        volts = 2.5 + (nums / 2**15 - 1) * 1.024 * 2.5 / 1
-        ohms = 1E3 / (5 / volts - 1)
-        return ohms
-    
-    def temps(self):
-        pass
-
+        if validated_adc_value is not None:
+            return validated_adc_value
+        
     def __repr__(self):
         return f"Sensor(name={self.name!r})"
 
 
-class Module(QWidget):
+class ModuleController(QWidget):
     """
     Signals: write \n
     Slots: read, _write, live_readout
     """
     write = Signal(str) # Signal to propogate to Sensors
-    read = Signal(str)
+    read = Signal(QWidget,str,str)
 
-    def __init__(self, module_config:ModuleConfig, enabled_sensors: list[str], firmware_interface, readout_interval=1000):
-        super(Module, self).__init__()
+    def __init__(self, config:ModuleConfig, firmware_interface: ModuleFirmwareInterface, readout_interval:int=1000):
+        super(ModuleController, self).__init__()
 
-        self.module_config = module_config
+        self.config = config
+        self.name = self.config.serial_number
 
-        self.name = self.module_config.serial_number
+        self.disabled_sensors = self.config.disabled_sensors
+        self.enabled_sensors = list(set(SENSOR_NAMES) - set(self.disabled_sensors))
 
-        self.enabled_sensors = enabled_sensors # E1, E2, ...
         self.readout_interval = readout_interval
         self.firmware_interface = firmware_interface
 
@@ -127,13 +90,7 @@ class Module(QWidget):
             "E4": "#a39b00"  #mustard yellow
         }
 
-        self.sensors = [Sensor(sensor_name, firmware_interface) for sensor_name in enabled_sensors]
-
-        self.emit_read = lambda sensor_name: self.read.emit(sensor_name)
-        for sensor in self.sensors:
-            # whenever the sensors emit the write signal, 
-            # the Module will emit its signal to the com port (passes the command along)
-            sensor.read[str].connect(self.emit_read) # Widget.Signal.connect(Slot)
+        self.sensors = [Sensor(sensor_name, firmware_interface) for sensor_name in self.enabled_sensors]
 
     @Slot()
     def live_readout(self, start: bool):
@@ -145,11 +102,13 @@ class Module(QWidget):
             self.timer.stop()
 
     @Slot(str)
-    def _read(self, data:str):
+    def read_sensor(self, data:str):
         # when com port reads, trigger read for all 8 sensors, 
         #   -> each sensor has logic to know if the data is for that sensor or not
         for sensor in self.sensors:
-            sensor._read(data)
+            raw_adc_value = sensor.read_adc(data)
+            if raw_adc_value is not None:
+                self.read.emit(self, sensor.name, raw_adc_value)
 
     @Slot()
     def _write(self):
@@ -167,4 +126,3 @@ class Module(QWidget):
         for sensor in self.sensors:
             if sensor.name == sensor_name:
                 return sensor
-

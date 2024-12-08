@@ -34,9 +34,9 @@ class ComPort(qtw.QComboBox):
         index = self.currentIndex()
         if index > 0:  # Ignoring the first 'Select Port' line
             port_info = self.itemData(index)
-            self.connect_port(port_info)
+            self._connect_port(port_info)
 
-    def connect_port(self, port: QSerialPortInfo) -> None:
+    def _connect_port(self, port: QSerialPortInfo) -> None:
         """Connects and sets port to the corresponding port info"""
         self.disconnect_port() #if already connected to another port, disconnect
         self.log(f"Connecting to port: {port.portName()}")
@@ -56,6 +56,13 @@ class ComPort(qtw.QComboBox):
         self.port.clear()
         self.log(f"Successfully connected to: {port.portName()}")
         # self.port._error_handler = self.port.errorOccurred.connect(self.log_port_error)
+
+    def connect_by_name(self, port_name:str) -> None:
+        ''' Connect to a port by name '''
+        for i in range(1, self.count()):
+            if self.itemText(i) == port_name:
+                self.setCurrentIndex(i)
+                break
 
     def _read(self) -> str:
         if self.port is None:

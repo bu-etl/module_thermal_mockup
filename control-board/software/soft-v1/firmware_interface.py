@@ -84,4 +84,4 @@ def available_firmwares():
 def firmware_select(firmware_name: str) -> ModuleFirmwareInterface:
     for subclass in ModuleFirmwareInterface.__subclasses__():
         if subclass.__firmware_name__ == firmware_name:
-            return subclass
+            return subclass()
