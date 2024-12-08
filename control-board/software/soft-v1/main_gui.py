@@ -1,7 +1,7 @@
 import PySide6.QtWidgets as qtw
-from PySide6.QtCore import Slot
+from PySide6.QtCore import Slot, QTimer
 from PySide6.QtGui import QAction
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import scoped_session, sessionmaker
 from database.env import DATABASE_URI
 from database import models as dm
@@ -26,12 +26,13 @@ class MainWindow(qtw.QMainWindow):
         super().__init__()
         self.setWindowTitle("Howdy Doody")
 
+
         #------------------CREATE DB SESSION---------------------#
         engine = create_engine(DATABASE_URI)
         Session = scoped_session(sessionmaker(bind=engine))
         self.session = Session()
         #--------------------------------------------------------#
-
+        self.module_controllers = []
         #--------------------------------MENU BAR-------------------------------#
         self.menu = self.menuBar()
 
@@ -94,14 +95,16 @@ class MainWindow(qtw.QMainWindow):
         self.data_select_dropdown.addItem('Data Type')
         readout_btn_layout.addWidget(self.data_select_dropdown, stretch=0)
         self.data_select_dropdown.addItem(
-            "ohms", "ohms"
-        )
-        self.data_select_dropdown.addItem(
             "volts", "volts"
+        )    
+        self.data_select_dropdown.addItem(
+            "ohms", "ohms"
         )
         self.data_select_dropdown.addItem(
             "celcius", "celcius"
         )
+
+        self.data_select_dropdown.setCurrentIndex(1)
 
         main_layout.addWidget(readout_btns)
 
@@ -115,12 +118,15 @@ class MainWindow(qtw.QMainWindow):
         self.SensorDataTimePlot.setLabel('bottom', 'Minutes')  # X-axis label
         self.sensor_data_time_plots = {}
 
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_plot)
+        self.timer.start(5000)  # Update every X ms
+
         readout_info_layout.addWidget(self.SensorDataTimePlot, stretch=1)
 
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
         readout_info_layout.addWidget(self.serial_display, stretch=0)
-
 
         main_layout.addWidget(readout_info)
 
@@ -176,12 +182,13 @@ class MainWindow(qtw.QMainWindow):
                 module_controller = ModuleController(
                     mod_config, 
                     fw.firmware_select(firmware_name), 
-                    readout_interval=1
+                    readout_interval=1000
                 )
                 module_controller.module = find_module(mod_config.serial_number, db_data["modules"])
                 module_controller.run = db_data["run"]
                 module_controller.control_board = db_data["control_board"]
-                
+                module_controller.control_board_position = mod_config.control_board_position
+
                 self.live_readout_btn.toggled.connect(module_controller.live_readout)
                 for sensor in module_controller.sensors:
                     self.select_sensor_dropdown.addItem(f"{module_controller.name}_{sensor.name}", sensor)
@@ -195,6 +202,7 @@ class MainWindow(qtw.QMainWindow):
                 self.com_port.read[str].connect(module_controller.read_sensor)
                 module_controller.read[ModuleController, str, str].connect(self.save_data)
                 
+                self.module_controllers.append(module_controller)
             self.session.commit() # this is for any new runs that have been added to the session
 
         else:
@@ -222,41 +230,52 @@ class MainWindow(qtw.QMainWindow):
             self.session.add(data)
             self.session.commit()
 
-
-
     # NEED THIS TO TRIGGER EVERY 3 or so seconds and read from db
     @Slot(int)
-    def update_plot(self, module_controller) -> None:
-        for sensor in module_controller.sensors:
-            sensor = module_controller.sensor(sensor.name)
-            if sensor is not None and sensor.raw_adcs:
-                t0 = sensor.times[0]
-                elapsed_time = lambda t: (t - t0).total_seconds() / 60 
-                elapsed_times = [elapsed_time(t) for t in sensor.times]
-
-                if self.data_select_dropdown.currentData() == "volts":
-                    y_data = self.adc_to_volts(sensor.raw_adcs)
-                elif self.data_select_dropdown.currentData() == "ohms":
-                    y_data = self.adc_to_ohms(sensor.raw_adcs)
-                elif self.data_select_dropdown.currentData() == "celcius":
-                    ...
-                else:
-                    elapsed_times = []
-                    y_data = []
-
-                self.sensor_data_time_plots[f"{module_controller.name}_{sensor.name}"].setData(
-                    elapsed_times, y_data
+    def update_plot(self) -> None:
+        if not hasattr(self, "run_config_modal"):
+            return
+        if not hasattr(self.run_config_modal, 'db_data'):
+            return
+        for mod_controller in self.module_controllers:
+            for sensor in mod_controller.enabled_sensors:
+                module = mod_controller.module
+                query = select(dm.Data).where(
+                    dm.Data.run==mod_controller.run, 
+                    dm.Data.sensor==sensor, 
+                    dm.Data.module == module
                 )
 
+                data = self.session.execute(query).scalars().all()
+                if not data:
+                    return
+                
+                t0 = data[0].timestamp
+                elapsed_time = lambda t: (t - t0).total_seconds() / 60 
+                elapsed_times = [elapsed_time(d.timestamp) for d in data]
 
+                if self.data_select_dropdown.currentData() == "volts":
+                    y_data = [d.volts for d in data]
+                elif self.data_select_dropdown.currentData() == "ohms":
+                    y_data = [d.ohms for d in data]
+                elif self.data_select_dropdown.currentData() == "celcius":
+                     y_data = [d.celcius for d in data if d.celcius is not None]              
+                else:
+                    elapsed_times = []
+                    y_data = []             
+
+                self.sensor_data_time_plots[f"{mod_controller.name}_{sensor}"].setData(
+                    elapsed_times, y_data
+                )
         
-
     @Slot(str)
     def log(self, text: str) -> None:
         self.serial_display.appendPlainText(text)
 
     @Slot()
     def _close(self) -> None:
+        print("disconnected")
+        self.session.close_all()
         self.com_port.disconnect_port()
         self.close()
 
@@ -267,5 +286,7 @@ if __name__ == "__main__":
     window.resize(800, 800)
     window.show()
 
-    # window.session.close()
     sys.exit(app.exec())
+
+    print("disconnecting")
+    window.session.close()

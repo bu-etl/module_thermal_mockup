@@ -33,7 +33,7 @@ class Module(Base):
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     calibration_id: Mapped[int] = mapped_column(ForeignKey("module_calibration.id"), nullable=True) # MAKE FALSE
     
-    calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module")
+    calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module", single_parent=True)
     data: Mapped[List["Data"]] = relationship(back_populates="module")
 
     all_calibrations: Mapped[List["SensorCalibration"]] = relationship(back_populates="module")
@@ -56,10 +56,10 @@ class Module(Base):
 class Data(Base):
     __tablename__ = "data"
     id: Mapped[int] = mapped_column(primary_key=True)
-    run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False)
+    run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False, index=True)
     control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"), nullable=True)
     control_board_position: Mapped[int] = mapped_column(Integer, nullable=True)
-    module_id: Mapped[int] = mapped_column(ForeignKey("module.id"))
+    module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), index=True)
     module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # up or down, relative to the beam pipe
     plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
 
@@ -79,9 +79,11 @@ class Data(Base):
     @hybrid_property
     def celcius(self) -> float:
         calib_map = self.module.calib_map()
-        slope = calib_map[self.sensor].fit_ohms_over_celcius
-        intercept = calib_map[self.sensor].fit_ohms_intercept
-        return (self.ohms - intercept) / slope
+        calib_sensor = calib_map[self.sensor]
+        if calib_sensor is not None:
+            slope = calib_sensor.fit_ohms_over_celcius
+            intercept = calib_sensor.fit_ohms_intercept
+            return (self.ohms - intercept) / slope
     
     module: Mapped["Module"] = relationship(back_populates="data")
     run: Mapped["Run"] = relationship(back_populates="data")
