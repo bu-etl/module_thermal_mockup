@@ -14,6 +14,10 @@ import firmware_interface as fw
 from functools import partial
 from datetime import datetime
 
+MODULE_WRITE_TIMER = 500
+COM_PORT_TIMER = 250
+UPDATE_PLOT_TIMER = 1000
+
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -24,7 +28,7 @@ class MainWindow(qtw.QMainWindow):
         Session = scoped_session(sessionmaker(bind=engine))
         self.session = Session()
         #--------------------------------------------------------#
-        self.module_controllers = []
+        self.module_controllers: list[ModuleController] = []
         #--------------------------------MENU BAR-------------------------------#
         self.menu = self.menuBar()
 
@@ -43,7 +47,7 @@ class MainWindow(qtw.QMainWindow):
 
         #Port Menu
         self.port_menu = self.menu.addMenu('Port')
-        self.com_port= ComPort(readout_interval=500)
+        self.com_port= ComPort(readout_interval=COM_PORT_TIMER)
 
         # What QWidgetAction is -> https://doc.qt.io/qt-6/qwidgetaction.html
         port_widget_action = qtw.QWidgetAction(self)
@@ -63,6 +67,11 @@ class MainWindow(qtw.QMainWindow):
 
         self.calibrate_adc = self.write_adc_action('Calibrate', 'calibrate')
         toolbar.addAction(self.calibrate_adc)
+
+        no_measurement_pending_action = QAction("no_measurement_pending", self)
+        no_measurement_pending_action.triggered.connect(self.no_measurement_pending)
+        
+        toolbar.addAction(no_measurement_pending_action)
         #---------------------------End of Tool Bar-----------------------------#
 
         central_widget = qtw.QWidget()
@@ -112,7 +121,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_plot)
-        self.timer.start(3000)  # Update every X ms
+        self.timer.start(UPDATE_PLOT_TIMER)  # Update every X ms
 
         readout_info_layout.addWidget(self.SensorDataTimePlot, stretch=1)
 
@@ -152,6 +161,11 @@ class MainWindow(qtw.QMainWindow):
         write_action.triggered.connect(partial(self.com_port._write, adc_command))
         return write_action
 
+    def no_measurement_pending(self):
+        for mod_cont in self.module_controllers:
+            for sensor in mod_cont:
+                sensor.measurement_pending = False
+
     @Slot()
     def configure_from_run_config(self):
         """
@@ -173,7 +187,7 @@ class MainWindow(qtw.QMainWindow):
                 module_controller = ModuleController(
                     mod_config, 
                     fw.firmware_select(firmware_name), 
-                    write_interval=1500
+                    write_interval=MODULE_WRITE_TIMER
                 )
                 
                 self.live_readout_btn.toggled.connect(module_controller.write_timer)
@@ -236,9 +250,9 @@ class MainWindow(qtw.QMainWindow):
                 elapsed_times = [elapsed_time(d.timestamp) for d in data]
 
                 if self.data_select_dropdown.currentData() == "volts":
-                    y_data = [d.volts for d in data]
+                    y_data = [d.volts for d in data if d.volts is not None]
                 elif self.data_select_dropdown.currentData() == "ohms":
-                    y_data = [d.ohms for d in data]
+                    y_data = [d.ohms for d in data if d.ohms is not None]
                 elif self.data_select_dropdown.currentData() == "celcius":
                      y_data = [d.celcius for d in data if d.celcius is not None]              
                 else:
@@ -248,7 +262,7 @@ class MainWindow(qtw.QMainWindow):
                 self.sensor_data_time_plots[f"{mod_controller.name}_{sensor}"].setData(
                     elapsed_times, y_data
                 )
-        
+    
     @Slot(str)
     def log(self, text: str) -> None:
         self.serial_display.appendPlainText(text)

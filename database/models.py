@@ -7,6 +7,8 @@ from sqlalchemy.types import LargeBinary
 from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 
+PROBE_SENSOR_NAMES = ["p1", "p2", "p3"]
+
 def create_all(engine) -> None:
     """
     Creates all databse tables and relationships
@@ -59,25 +61,39 @@ class Data(Base):
     run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False, index=True)
     control_board_id: Mapped[int] = mapped_column(ForeignKey("control_board.id"), nullable=True)
     control_board_position: Mapped[int] = mapped_column(Integer, nullable=True)
-    module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), index=True)
+    module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), index=True, nullable=False)
     module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # up or down, relative to the beam pipe
     plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
 
-    sensor: Mapped[str] = mapped_column(String(50))
+    sensor: Mapped[str] = mapped_column(String(50), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime)
     raw_adc: Mapped[str] = mapped_column(String(50))
 
     @hybrid_property
     def volts(self) -> float:
+        if self.sensor.lower() in PROBE_SENSOR_NAMES:
+            return None
         num = int(str(self.raw_adc)[:-2], 16)
         return 2.5 + (num / 2**15 - 1) * 1.024 * 2.5 / 1
 
     @hybrid_property
     def ohms(self) -> float:
+        if self.sensor.lower() in PROBE_SENSOR_NAMES:
+            return None
         return 1E3 / (5 / self.volts - 1)
     
     @hybrid_property
     def celcius(self) -> float:
+        if self.sensor.lower() in PROBE_SENSOR_NAMES:
+            int_value = int(self.raw_adc, 16)
+            # Shift right by 3 bits (ignoring the 3 least significant bits)
+            int_value >>= 3
+            # Check if the 12th bit is set for sign and 2's complement adjustment
+            if int_value & 0x1000:
+                int_value -= 0x2000
+            return int_value * 0.0625
+        
+
         calib_map = self.module.calib_map()
         calib_sensor = calib_map[self.sensor]
         if calib_sensor is not None:

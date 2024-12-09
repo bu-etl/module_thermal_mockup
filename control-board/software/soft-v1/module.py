@@ -2,19 +2,13 @@ from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Signal, Slot, QTimer
 from run_config import ModuleConfig
 from firmware_interface import ModuleFirmwareInterface
-SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4"]
+SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4", "P1", "P2", "P3"]
 
 class Sensor:
     def __init__(self, name: str, firmware_interface: ModuleFirmwareInterface):
         self.name = name
         self.firmware_interface = firmware_interface
-        self.measure_adc_command = self.firmware_interface.write_sensor(self.name)
         self.measurement_pending = False #makes sure the # of reads and # of writes are equal
-        self.raw_adc_length = 6 #length of this string 72a4ff
-
-        # Initialize the data
-        self.raw_adcs = []
-        self.times = []
 
         #Store the last readout to check for this case:
         # > meas
@@ -25,15 +19,19 @@ class Sensor:
         """
         Reads the output from the ADC, form is something like "measure 1 72a4ff"
         """
+        #self.raw_adc_length = 6 #length of this string 72a4ff
+
+        data = data.lower()
         validated_adc_value = None
 
         #first check if data was split over two lines, sometimes happens
+        measure_adc_command = self.firmware_interface.write_sensor(self.name)
         merged_line_data = self.last_readout + data
-        expected_data_length = len(self.measure_adc_command) + self.raw_adc_length + 1 #+1 for the space between "measure 1" and raw_adc, total is 16 
+        expected_data_length = self.firmware_interface.data_line_length(self.name) #len(self.measure_adc_command) + self.raw_adc_length + 1 #+1 for the space between "measure 1" and raw_adc, total is 16 
         data_was_split = (
-            (merged_line_data).count(self.measure_adc_command)==1 #if data was split, the merged data should only contain the measure_adc_command once
+            (merged_line_data).count(measure_adc_command)==1 #if data was split, the merged data should only contain the measure_adc_command once
             and 
-            merged_line_data.startswith(self.measure_adc_command) #cleans rare case where previous cut off is same length as current cut off
+            merged_line_data.startswith(measure_adc_command) #cleans rare case where previous cut off is same length as current cut off
             and
             len(merged_line_data)==expected_data_length #its length should also be something like len("measure 1 72a4ff"), prevents cases like "measure 1 72a4ffmeasure 2 72a4ff"
         )
@@ -41,18 +39,17 @@ class Sensor:
             data = merged_line_data
         
         #check if command is in data
-        if self.measure_adc_command in data and len(data) == expected_data_length:
+        if measure_adc_command in data and len(data) == expected_data_length:
             raw_adc = self.firmware_interface.read_sensor(data)
             if raw_adc != '0' or not raw_adc:
                 #sometimes raw_adc can give 0, skip append for these
                 validated_adc_value = raw_adc
 
-            self.measurement_pending = False
-            
         #for checking split lines on arduino
         self.last_readout = data
 
         if validated_adc_value is not None:
+            self.measurement_pending = False
             return validated_adc_value
         
     def __repr__(self):
@@ -87,7 +84,10 @@ class ModuleController(QWidget):
             "E2": "#191970", #midnightblue
             "L3": "#ff385d", #salmon red pink
             "L4": "#ffd700", #gold
-            "E4": "#a39b00"  #mustard yellow
+            "E4": "#a39b00",  #mustard yellow
+            "P1": "black",
+            "P2": "black",
+            "P3": "black"
         }
 
         self.sensors = [Sensor(sensor_name, firmware_interface) for sensor_name in self.enabled_sensors]
@@ -113,6 +113,7 @@ class ModuleController(QWidget):
     @Slot()
     def _write(self):
         #manually write depending on number of channels
+        #print({sensor.name:sensor.measurement_pending for sensor in self.sensors})
         if all([not sensor.measurement_pending for sensor in self.sensors]):
             # the emit is the data that gets sent to the com port
             self.write.emit(
