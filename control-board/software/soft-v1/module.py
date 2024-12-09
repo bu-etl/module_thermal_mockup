@@ -71,7 +71,7 @@ class ModuleController(QWidget):
         super(ModuleController, self).__init__()
 
         self.config = config
-        self.name = self.config.serial_number
+        self.name = self.config.module.name
 
         self.disabled_sensors = self.config.disabled_sensors
         self.enabled_sensors = list(set(SENSOR_NAMES) - set(self.disabled_sensors))

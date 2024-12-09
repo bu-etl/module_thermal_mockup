@@ -1,11 +1,10 @@
 from typing import List
-from typing import Optional
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, ForeignKeyConstraint
 from sqlalchemy import String, Integer, Float, DateTime
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import mapped_column, relationship, Mapped, DeclarativeBase
 from sqlalchemy.types import LargeBinary
-from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property
 from datetime import datetime
 
 def create_all(engine) -> None:
@@ -31,6 +30,7 @@ class Module(Base):
     __tablename__ = "module"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    info: Mapped[str] = mapped_column(String(), nullable=True, unique=False)
     calibration_id: Mapped[int] = mapped_column(ForeignKey("module_calibration.id"), nullable=True) # MAKE FALSE
     
     calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module", single_parent=True)
@@ -151,15 +151,15 @@ class ModuleCalibration(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     comment: Mapped[str] = mapped_column(String(500), nullable=True)
 
-    E1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    E2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    E3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    E4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    E1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    E2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    E3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    E4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
 
-    L1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    L2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    L3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
-    L4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id"), nullable=True)
+    L1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    L2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    L3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    L4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
 
     E1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E1_id], post_update=True)
     E2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E2_id], post_update=True)

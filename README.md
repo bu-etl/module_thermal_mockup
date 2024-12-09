@@ -28,17 +28,22 @@ disabled_sensors = ['E2', 'L1', 'L2', 'L3', 'L4']
 #### Example 1: Reuse Run
 ```
 [RUN]
-reuse_run_id = 4
+#run = 18
+MODE = "DEBUG"
+COLD_PLATE = "Pretty Double Loop Solder Plate"
+COMMENT = "checking refactor for software!"
 
 [MICROCONTROLLER]
 firmware_version = "Thermal Mockup V2"
 port = "ttyACM0"
 
 [[MODULES]]
-serial_number = "TM0001"
+module = "TM0001"
 cold_plate_position = 3
 orientation = "UP"
-disabled_sensors = ['E2', 'L1', 'L2', 'L3', 'L4']
+disabled_sensors = ['E1', 'E2', 'L1', 'L2', 'L3', 'L4']
+#control_board = "ControlBoardName"
+#control_board_position = "A"
 ```
 
 

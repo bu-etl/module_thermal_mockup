@@ -7,25 +7,17 @@ from database.env import DATABASE_URI
 from database import models as dm
 import pyqtgraph as pg
 import sys
-from run_config import RunConfigModal
+from run_config import RunConfigModal, RunConfig
 from com_port import ComPort
 from module import ModuleController
 import firmware_interface as fw
 from functools import partial
-import numpy as np
 from datetime import datetime
-
-def find_module(name:str, modules:list[dm.Module]) -> dm.Module:
-    for module in modules:
-        if module.name == name:
-            return module
-    return None
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Howdy Doody")
-
 
         #------------------CREATE DB SESSION---------------------#
         engine = create_engine(DATABASE_URI)
@@ -120,7 +112,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_plot)
-        self.timer.start(5000)  # Update every X ms
+        self.timer.start(3000)  # Update every X ms
 
         readout_info_layout.addWidget(self.SensorDataTimePlot, stretch=1)
 
@@ -166,29 +158,24 @@ class MainWindow(qtw.QMainWindow):
         This method is the master method for adding all the information form
         the run configuration
         """
-        self.run_config_modal = RunConfigModal(self.session)
+        run_config_modal = RunConfigModal(self.session)
 
-        if self.run_config_modal.exec():
-            self.com_port.connect_by_name(self.run_config_modal.run_config.microcontroller.port)
+        if run_config_modal.exec():
+            self.run_config: RunConfig = run_config_modal.run_config
+            self.com_port.connect_by_name(self.run_config.Microcontroller.port)
             
-            self.run_config = self.run_config_modal.run_config
-            if len(self.run_config.modules) != 1:
+            if len(self.run_config.Modules) != 1:
                 raise NotImplementedError("multi modules is not implemented yet")
             
-            for mod_config in self.run_config.modules:
-                firmware_name = self.run_config.microcontroller.firmware_version
+            for mod_config in self.run_config.Modules:
+                firmware_name = self.run_config.Microcontroller.firmware_version
 
-                db_data = self.run_config_modal.db_data
                 module_controller = ModuleController(
                     mod_config, 
                     fw.firmware_select(firmware_name), 
                     readout_interval=1000
                 )
-                module_controller.module = find_module(mod_config.serial_number, db_data["modules"])
-                module_controller.run = db_data["run"]
-                module_controller.control_board = db_data["control_board"]
-                module_controller.control_board_position = mod_config.control_board_position
-
+                
                 self.live_readout_btn.toggled.connect(module_controller.live_readout)
                 for sensor in module_controller.sensors:
                     self.select_sensor_dropdown.addItem(f"{module_controller.name}_{sensor.name}", sensor)
@@ -211,39 +198,33 @@ class MainWindow(qtw.QMainWindow):
             print("Cancel!")
 
     def save_data(self, module_controller:ModuleController, sensor_name:str, raw_adc:str):
-        db_data = self.run_config_modal.db_data
-        run_config = self.run_config_modal.run_config
+        mod_config = module_controller.config
+        data = dm.Data(
+            run = self.run_config.Run.run,
+            control_board = mod_config.control_board,
+            control_board_position = mod_config.control_board_position,
+            module = mod_config.module,
+            module_orientation = mod_config.orientation,
+            plate_position = mod_config.cold_plate_position,
+            sensor = sensor_name,
+            timestamp = datetime.now(),
+            raw_adc = raw_adc
+        )
 
-        if db_data is not None and run_config is not None:
-            data = dm.Data(
-                run = module_controller.run,
-                control_board = module_controller.control_board,
-                control_board_position = module_controller.control_board_position,
-                module = module_controller.module,
-                module_orientation = module_controller.config.orientation,
-                plate_position = module_controller.config.cold_plate_position,
-                sensor = sensor_name,
-                timestamp = datetime.now(),
-                raw_adc = raw_adc
-            )
-
-            self.session.add(data)
-            self.session.commit()
+        self.session.add(data)
+        self.session.commit()
 
     # NEED THIS TO TRIGGER EVERY 3 or so seconds and read from db
     @Slot(int)
     def update_plot(self) -> None:
-        if not hasattr(self, "run_config_modal"):
-            return
-        if not hasattr(self.run_config_modal, 'db_data'):
+        if not hasattr(self, "run_config"):
             return
         for mod_controller in self.module_controllers:
             for sensor in mod_controller.enabled_sensors:
-                module = mod_controller.module
                 query = select(dm.Data).where(
-                    dm.Data.run==mod_controller.run, 
+                    dm.Data.run==self.run_config.Run.run, 
                     dm.Data.sensor==sensor, 
-                    dm.Data.module == module
+                    dm.Data.module == mod_controller.config.module
                 )
 
                 data = self.session.execute(query).scalars().all()
