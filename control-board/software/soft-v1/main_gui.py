@@ -173,10 +173,10 @@ class MainWindow(qtw.QMainWindow):
                 module_controller = ModuleController(
                     mod_config, 
                     fw.firmware_select(firmware_name), 
-                    readout_interval=1000
+                    write_interval=1500
                 )
                 
-                self.live_readout_btn.toggled.connect(module_controller.live_readout)
+                self.live_readout_btn.toggled.connect(module_controller.write_timer)
                 for sensor in module_controller.sensors:
                     self.select_sensor_dropdown.addItem(f"{module_controller.name}_{sensor.name}", sensor)
                     # Initialize plotItem for each sensor name
