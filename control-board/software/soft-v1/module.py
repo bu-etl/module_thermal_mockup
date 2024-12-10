@@ -22,6 +22,7 @@ class Sensor:
         #self.raw_adc_length = 6 #length of this string 72a4ff
 
         data = data.lower()
+        #print(self.name, data, len(data))
         validated_adc_value = None
 
         #first check if data was split over two lines, sometimes happens
@@ -44,12 +45,12 @@ class Sensor:
             if raw_adc != '0' or not raw_adc:
                 #sometimes raw_adc can give 0, skip append for these
                 validated_adc_value = raw_adc
+            self.measurement_pending = False
 
         #for checking split lines on arduino
         self.last_readout = data
 
         if validated_adc_value is not None:
-            self.measurement_pending = False
             return validated_adc_value
         
     def __repr__(self):

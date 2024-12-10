@@ -106,7 +106,7 @@ class ThermalMockupV2(ModuleFirmwareInterface):
 
     def data_line_length(self, sensor_name:str) -> int:
         if 'p' in sensor_name.lower():
-            return 14
+            return 15
         elif 'e' in sensor_name.lower() or 'l' in sensor_name.lower():
             return 16
         else:

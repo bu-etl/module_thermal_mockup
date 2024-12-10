@@ -14,9 +14,9 @@ import firmware_interface as fw
 from functools import partial
 from datetime import datetime
 
-MODULE_WRITE_TIMER = 500
-COM_PORT_TIMER = 250
-UPDATE_PLOT_TIMER = 1000
+MODULE_WRITE_TIMER = 1500
+COM_PORT_TIMER = 500
+UPDATE_PLOT_TIMER = 1500
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
@@ -163,7 +163,7 @@ class MainWindow(qtw.QMainWindow):
 
     def no_measurement_pending(self):
         for mod_cont in self.module_controllers:
-            for sensor in mod_cont:
+            for sensor in mod_cont.sensors:
                 sensor.measurement_pending = False
 
     @Slot()
@@ -213,6 +213,8 @@ class MainWindow(qtw.QMainWindow):
 
     def save_data(self, module_controller:ModuleController, sensor_name:str, raw_adc:str):
         mod_config = module_controller.config
+        # print("in save data")
+        print(mod_config, sensor_name, raw_adc)
         data = dm.Data(
             run = self.run_config.Run.run,
             control_board = mod_config.control_board,
