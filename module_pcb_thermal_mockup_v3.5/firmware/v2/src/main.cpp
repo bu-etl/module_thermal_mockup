@@ -428,20 +428,20 @@ void temp_probe(Command cmd) {
     delay(10);
     unsigned long rawValue = readSPI(16);
     digitalWrite(cs_signal, HIGH);
-    Serial.print("Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
+    Serial.println("Probe " + String(probe_id) + ": 0x" + String(rawValue, HEX));
     
-    rawValue >>= 3;
+    // rawValue >>= 3;
 
     // Handle negative temperatures (12-bit two's complement format)
-    if (rawValue & 0x1000) {
-      rawValue |= 0xE000;  // Sign extend to 16 bits if the temperature is negative
-    }
-    float temperatureC = rawValue * 0.0625;
+    // if (rawValue & 0x1000) {
+    //   rawValue |= 0xE000;  // Sign extend to 16 bits if the temperature is negative
+    // }
+    // float temperatureC = rawValue * 0.0625;
   
-    Serial.println("  " + String(temperatureC) + " °C");
+    //Serial.println("  " + String(temperatureC) + " °C");
     delay(1000);
   }
-  Serial.println(F("TEMPERATURE READOUT COMPLETE\n"));
+  //Serial.println(F("TEMPERATURE READOUT COMPLETE\n"));
 }
 
 

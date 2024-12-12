@@ -15,7 +15,7 @@ from widgets.com_port import ComPort
 from widgets.module import Module
 from widgets.calib_input import CalibInput
 
-ENABLED_CHANNELS = [1, 3, 8]
+ENABLED_CHANNELS = [1, 2,3,5,6,8]
 #ENABLED_CHANNELS = [1, 2, 3, 4, 5, 6, 7, 8]
 DB_RUN_MODES = ('CALIBRATE')
 DATA_STORE = ['DB']
