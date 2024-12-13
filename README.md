@@ -1,7 +1,44 @@
 # Module Pcb Thermal Mockup
-Previous version [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)
+*Previous version at nebraska [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)*
 
-# Run Config
+[Documentation](https://codimd.web.cern.ch/QkczGsSpTheHelzOmx9pmw?view)
+
+# Project Structure
+```bash
+.
+├── README.md
+├── control-board
+│   ├── fimware_CB
+│   ├── hardware
+│   └── software_CB
+├── database
+│   └── ...
+├── module_pcb_thermal_mockup
+│   ├── firmware_TM
+│   ├── hardware
+│   └── software_TM
+├── other
+│   ├── README.md
+│   └── TMP121-test
+└── ssh_tunnel.png
+```
+
+To order latests Thermal Module PCB and SMD Components use 
+- Gerbers: TM_gerbers-v4.zip
+- Bill of Materials: BOM_TM.csv
+```
+├── module_pcb_thermal_mockup
+│   ├── hardware
+│   │   ├── design-files_TM
+│   │   └── documents
+│   │       ├── BOM_TM.csv
+│   │       ├── TM_gerbers-v4.zip
+```
+**To view PCB and schematic design use KiCad and open `design-files_TM/`, this directory contains all pcb design files
+
+
+# Software Information
+## Run Config
 For each run you have to specify a config file in the [TOML format](https://toml.io/en/). 
 * keys are case insensitive
 * Cannot mix keys between the New Run example 1 and the Adding to Old Run exmaple 2. 
