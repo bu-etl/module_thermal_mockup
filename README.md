@@ -1,6 +1,6 @@
 # Module Pcb Thermal Mockup
 
-[Documentation](https://codimd.web.cern.ch/QkczGsSpTheHelzOmx9pmw?view)
+TO VIEW FULL PROJECT DETAILS + INSTRUCTIONS: [Documentation](https://codimd.web.cern.ch/QkczGsSpTheHelzOmx9pmw?view)
 
 # Project Structure
 ```bash
