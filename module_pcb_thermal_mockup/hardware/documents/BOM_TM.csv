@@ -1,4 +1,3 @@
-Source:,/Users/naomi_12/module_pcb_thermal_mockup/module_pcb_thermal_mockup_v3.5/design-files/module_pcb_thermal_mockup_v3.5/module_pcb_thermal_mockup_v3.5.kicad_sch,,,,,,,,
 Date:,"2024 April 02, Tuesday 12:42:46",,,,,,,,
 Tool:,Eeschema 7.0.7,,,,,,,,
 Generator:,/Applications/KiCad/KiCad.app/Contents/SharedSupport/plugins/bom_csv_grouped_by_value.py,,,,,,,,
@@ -18,7 +17,7 @@ Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet,Link to buy,Qty to Order
 9,2,"R3, R4",40k,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/RC0805FR-0740K2L/727941,50,$0.80 
 10,8,"R5, R6, R7, R8, R9, R10, R11, R12",1k,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,https://www.digikey.com/en/products/detail/vishay-dale/TNPU08051K00AWEN00/11618132,https://www.digikey.com/en/products/detail/yageo/RC0805FR-071KL/727444,50,$0.80 
 11,2,"R13, R14",1M,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/RC0805FR-071MP/16998891?utm_adgroup=Yageo&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Supplier_Yageo&utm_term=&utm_content=Yageo&utm_id=go_cmp-17816160916_adg-_ad-__dev-c_ext-_prd-16998891_sig-Cj0KCQjw2a6wBhCVARIsABPeH1vXq8jhVhcd8mqk05X6kSoArQ_ob-2C46muu8s2HEyHS6fuCAayC9UaArrcEALw_wcB&gad_source=1&gclid=Cj0KCQjw2a6wBhCVARIsABPeH1vXq8jhVhcd8mqk05X6kSoArQ_ob-2C46muu8s2HEyHS6fuCAayC9UaArrcEALw_wcB,50,$1.31 
-12,1,RV1,25k,Device:R_Potentiometer,Potentiometer_SMD:Potentiometer_Bourns_3224W_Vertical,~,https://www.digikey.at/en/products/detail/te-connectivity-passive-product/CPF-A-0805B25KE/5583884,10,$2.56 
+12,1,RV1,25k,Device:R_Potentiometer,Potentiometer_SMD:Potentiometer_Bourns_3224W_Vertical,~,,, 
 13,1,U1,ETROC_dummy_thermal_sensors,:ETROC_dummy_thermal_sensors_1,unl_silab:PCB_ETROC2_dummy,~,,~,
 14,1,U2,ETROC_dummy_thermal_sensors,:ETROC_dummy_thermal_sensors_3,unl_silab:PCB_ETROC2_dummy,~,,~,
 15,1,U3,ETROC_dummy_thermal_sensors,unl_silab:ETROC_dummy_thermal_sensors,unl_silab:PCB_ETROC2_dummy,~,,~,
@@ -29,4 +28,4 @@ Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet,Link to buy,Qty to Order
 20,1,Y1,32kHz,Device:Crystal,Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm,~,https://www.digikey.com/en/products/detail/raltron-electronics/RT3215-32-768-12-5-TR/10273025,10,$3.81 
 ,,,,,,,,,
 Total: ,$207.12 ,,,,,,,,
-Digikey Cart,https://www.digikey.com/short/wqz3thwn,,,,,,,,
+Digikey Cart,,,,,,,,,
