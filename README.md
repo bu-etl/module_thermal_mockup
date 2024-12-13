@@ -1,5 +1,4 @@
 # Module Pcb Thermal Mockup
-*Previous version at nebraska [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)*
 
 [Documentation](https://codimd.web.cern.ch/QkczGsSpTheHelzOmx9pmw?view)
 
@@ -34,7 +33,7 @@ To order latests Thermal Module PCB and SMD Components use
 │   │       ├── BOM_TM.csv
 │   │       ├── TM_gerbers-v4.zip
 ```
-**To view PCB and schematic design use KiCad and open `design-files_TM/`, this directory contains all pcb design files
+*To view PCB and schematic design use KiCad and open `design-files_TM/`, this directory contains all pcb design files*
 
 
 # Software Information
@@ -183,3 +182,6 @@ Makes more sense when we look at the long form of the first command:
 
 
 ![alt text](ssh_tunnel.png)
+
+# Old THerrmal Module 
+*Previous version at nebraska [thermal_mockup_v3](https://tinyurl.com/hdvt5jh5)*
