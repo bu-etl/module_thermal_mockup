@@ -118,9 +118,22 @@ class Run(Base):
     cold_plate: Mapped["ColdPlate"] = relationship(back_populates="run")
     data: Mapped[List["Data"]] = relationship(back_populates="run")
 
+    notes: Mapped[List["RunNote"]] = relationship(back_populates="run")
+
     def __repr__(self) -> str:
         return f"Run(id={self.id!r}, mode={self.mode!r}), comment={self.comment!r}"
     
+
+class RunNote(Base):
+    __tablename__ = "run_note"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    note: Mapped[str] = mapped_column(String, nullable=False)
+
+    run: Mapped["Run"] = relationship(back_populates="notes")
+
+
 class ColdPlate(Base):
     """
     Defines all the module positions on the plate / wedge / dee etc...
