@@ -49,7 +49,10 @@ class Module(Base):
             "L1": self.calibration.L1,
             "L2": self.calibration.L2,
             "L3": self.calibration.L3,
-            "L4": self.calibration.L4
+            "L4": self.calibration.L4,
+            "P1": self.calibration.P1,
+            "P2": self.calibration.P2,
+            "P3": self.calibration.P3
         }
 
     def __repr__(self) -> str:
@@ -84,6 +87,7 @@ class Data(Base):
     
     @hybrid_property
     def celcius(self) -> float:
+        value_to_convert = self.ohms
         if self.sensor.lower() in PROBE_SENSOR_NAMES:
             int_value = int(self.raw_adc, 16)
             # Shift right by 3 bits (ignoring the 3 least significant bits)
@@ -91,15 +95,14 @@ class Data(Base):
             # Check if the 12th bit is set for sign and 2's complement adjustment
             if int_value & 0x1000:
                 int_value -= 0x2000
-            return int_value * 0.0625
+            value_to_convert = int_value * 0.0625
         
-
         calib_map = self.module.calib_map()
         calib_sensor = calib_map[self.sensor]
         if calib_sensor is not None:
-            slope = calib_sensor.fit_ohms_over_celcius
-            intercept = calib_sensor.fit_ohms_intercept
-            return (self.ohms - intercept) / slope
+            slope = calib_sensor.slope
+            intercept = calib_sensor.intercept
+            return (value_to_convert - intercept) / slope # make sure slope and intercept have units to match this equaiton!
     
     module: Mapped["Module"] = relationship(back_populates="data")
     run: Mapped["Run"] = relationship(back_populates="data")
@@ -160,8 +163,8 @@ class SensorCalibration(Base):
 
     module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), nullable=False)
     sensor: Mapped[str] = mapped_column(String(50), nullable=False) 
-    fit_ohms_over_celcius: Mapped[float] = mapped_column(Float, nullable=False)
-    fit_ohms_intercept: Mapped[float] = mapped_column(Float, nullable=False)
+    slope: Mapped[float] = mapped_column(Float, nullable=False) # SHOULD BE READING/REF for example: OHMS/CELCIUS or PROBE_TEMP/REF_TEMP
+    intercept: Mapped[float] = mapped_column(Float, nullable=False) # Reading offset for example Ohms
 
     celcius: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=True)
     ohms: Mapped[ARRAY[float]] = mapped_column(ARRAY(Float), nullable=True)
@@ -173,7 +176,7 @@ class SensorCalibration(Base):
     module: Mapped["Module"] = relationship(back_populates="all_calibrations")
 
     def __repr__(self) -> str:
-        return f"SensorCalibration(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, fit_ohms_over_celcius={self.fit_ohms_over_celcius!r}, fit_ohms_intercept={self.fit_ohms_intercept!r})"
+        return f"SensorCalibration(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, slope={self.slope!r}, intercept={self.intercept!r})"
 
 class ModuleCalibration(Base):
     __tablename__ = "module_calibration"
@@ -190,6 +193,10 @@ class ModuleCalibration(Base):
     L3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
     L4_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
 
+    P1_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    P2_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+    P3_id: Mapped[int] = mapped_column(ForeignKey("sensor_calibration.id", use_alter=True), nullable=True)
+
     E1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E1_id], post_update=True)
     E2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E2_id], post_update=True)
     E3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[E3_id], post_update=True)
@@ -198,6 +205,10 @@ class ModuleCalibration(Base):
     L2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L2_id], post_update=True)
     L3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L3_id], post_update=True)
     L4: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[L4_id], post_update=True)
+
+    P1: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[P1_id], post_update=True)
+    P2: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[P2_id], post_update=True)
+    P3: Mapped["SensorCalibration"] = relationship("SensorCalibration", foreign_keys=[P3_id], post_update=True)
 
     module: Mapped["Module"] = relationship(back_populates="calibration")   
 
