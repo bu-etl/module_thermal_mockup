@@ -140,6 +140,33 @@ class MainWindow(qtw.QMainWindow):
             partial(self.select_sensor, self.SensorDataTimePlot, self.sensor_data_time_plots)
         )
 
+        self.run_note = qtw.QWidget()
+        run_note_layout = qtw.QHBoxLayout()
+        self.run_note_text_box = qtw.QTextEdit(self)
+        self.run_note.setFixedHeight(50)  # Set the desired height
+        run_note_layout.addWidget(self.run_note_text_box) 
+        self.submit_run_note_btn = qtw.QPushButton("Submit Note")
+        run_note_layout.addWidget(self.submit_run_note_btn)
+        self.run_note.setLayout(run_note_layout)
+
+        self.submit_run_note_btn.clicked.connect(self.submit_run_note)
+
+        main_layout.addWidget(self.run_note)
+
+    @Slot()
+    def submit_run_note(self):
+        # gaurd conditions
+        # if run is not configured dont do anything
+        if not hasattr(self, 'run_config'):
+            return
+        run_note = dm.RunNote(
+            run = self.run_config.Run.run,
+            note = self.run_note_text_box.toPlainText()
+        )
+        self.session.add(run_note)
+        self.session.commit()
+        self.run_note_text_box.clear()
+
     @Slot(int)
     def select_sensor(self, plot_widget, plots: dict, index: int) -> None:
         for live_plot in plots.values():

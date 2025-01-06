@@ -19,8 +19,6 @@ class Sensor:
         """
         Reads the output from the ADC, form is something like "measure 1 72a4ff"
         """
-        #self.raw_adc_length = 6 #length of this string 72a4ff
-
         data = data.lower()
         #print(self.name, data, len(data))
         validated_adc_value = None
