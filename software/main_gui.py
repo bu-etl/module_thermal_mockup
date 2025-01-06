@@ -1,5 +1,5 @@
 import PySide6.QtWidgets as qtw
-from PySide6.QtCore import Slot, QTimer
+from PySide6.QtCore import Slot, QTimer, Qt
 from PySide6.QtGui import QAction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -75,7 +75,12 @@ class MainWindow(qtw.QMainWindow):
         #---------------------------End of Tool Bar-----------------------------#
 
         central_widget = qtw.QWidget()
-        main_layout = qtw.QVBoxLayout(central_widget)
+        self.main_layout = qtw.QVBoxLayout(central_widget)
+
+        self.run_banner = qtw.QLabel("No run selected")
+        self.run_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.run_banner.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
+        self.main_layout.addWidget(self.run_banner)
 
         readout_btns = qtw.QWidget()
         readout_btn_layout = qtw.QHBoxLayout(readout_btns)
@@ -107,7 +112,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.data_select_dropdown.setCurrentIndex(1)
 
-        main_layout.addWidget(readout_btns)
+        self.main_layout.addWidget(readout_btns)
 
         readout_info = qtw.QWidget()
         readout_info_layout = qtw.QHBoxLayout(readout_info)
@@ -129,7 +134,7 @@ class MainWindow(qtw.QMainWindow):
         self.serial_display.setReadOnly(True)
         readout_info_layout.addWidget(self.serial_display, stretch=0)
 
-        main_layout.addWidget(readout_info)
+        self.main_layout.addWidget(readout_info)
 
         self.setCentralWidget(central_widget)
 
@@ -151,7 +156,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.submit_run_note_btn.clicked.connect(self.submit_run_note)
 
-        main_layout.addWidget(self.run_note)
+        self.main_layout.addWidget(self.run_note)
 
     @Slot()
     def submit_run_note(self):
@@ -235,6 +240,7 @@ class MainWindow(qtw.QMainWindow):
                 
                 self.module_controllers.append(module_controller)
             self.session.commit() # this is for any new runs that have been added to the session
+            self.run_banner.setText(f"Selected Run: {self.run_config.Run.run}")
 
         else:
             # remove all data and reset the page if there is any
