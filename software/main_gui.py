@@ -7,7 +7,7 @@ from database.env import DATABASE_URI
 from database import models as dm
 import pyqtgraph as pg
 import sys
-from run_config import RunConfigModal, RunConfig
+from run_config import RunConfigModal, RunConfig, ModuleConfig
 from com_port import ComPort
 from module import ModuleController
 import firmware_interface as fw
@@ -185,10 +185,13 @@ class MainWindow(qtw.QMainWindow):
                 firmware_name = self.run_config.Microcontroller.firmware_version
 
                 module_controller = ModuleController(
-                    mod_config, 
+                    mod_config.module.name,
+                    mod_config.disabled_sensors,
                     fw.firmware_select(firmware_name), 
                     write_interval=MODULE_WRITE_TIMER
                 )
+                # attach database information to the module controller
+                module_controller.config: ModuleConfig = mod_config
                 
                 self.live_readout_btn.toggled.connect(module_controller.write_timer)
                 for sensor in module_controller.sensors:
@@ -214,7 +217,6 @@ class MainWindow(qtw.QMainWindow):
     def save_data(self, module_controller:ModuleController, sensor_name:str, raw_adc:str):
         mod_config = module_controller.config
         # print("in save data")
-        print(mod_config, sensor_name, raw_adc)
         data = dm.Data(
             run = self.run_config.Run.run,
             control_board = mod_config.control_board,

@@ -93,8 +93,7 @@ class ThermalMockupV2(ModuleFirmwareInterface):
         elif 'e' in sensor_name.lower() or 'l' in sensor_name.lower():
             return f"measure {self.sensor_map[sensor_name]}"
         else:
-            raise NotImplementedError(f'unknown sensor name: {sensor_name}') 
-                
+            raise NotImplementedError(f'unknown sensor name: {sensor_name}')         
 
     def write_sensors(self, sensor_names: list[str]) -> str:
         etroc_lgad_channels = [str(self.sensor_map[sensor_name]) for sensor_name in sensor_names if 'p' not in sensor_name.lower()]
@@ -112,7 +111,6 @@ class ThermalMockupV2(ModuleFirmwareInterface):
         else:
             raise NotImplementedError(f'unknown sensor name: {sensor_name}') 
            
-
 
 def available_firmwares():
     return [subclass.__firmware_name__ for subclass in ModuleFirmwareInterface.__subclasses__()]
