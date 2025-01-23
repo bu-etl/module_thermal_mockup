@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import Signal, Slot, QTimer
-from run_config import ModuleConfig
+#from run_config import ModuleConfig
 from firmware_interface import ModuleFirmwareInterface
 SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4", "P1", "P2", "P3"]
 
@@ -19,8 +19,6 @@ class Sensor:
         """
         Reads the output from the ADC, form is something like "measure 1 72a4ff"
         """
-        #self.raw_adc_length = 6 #length of this string 72a4ff
-
         data = data.lower()
         #print(self.name, data, len(data))
         validated_adc_value = None
@@ -65,13 +63,14 @@ class ModuleController(QWidget):
     write = Signal(str) # Signal to propogate to Sensors
     read = Signal(QWidget,str,str)
 
-    def __init__(self, config:ModuleConfig, firmware_interface: ModuleFirmwareInterface, write_interval:int=1000):
+    def __init__(self, name: str, disabled_sensors: list, firmware_interface: ModuleFirmwareInterface, write_interval:int=1000):
         super(ModuleController, self).__init__()
 
-        self.config = config
-        self.name = self.config.module.name
-
-        self.disabled_sensors = self.config.disabled_sensors
+        #self.config = config
+        #self.name = self.config.module.name
+        #self.disabled_sensors = self.config.disabled_sensors
+        self.name = name
+        self.disabled_sensors = disabled_sensors
         self.enabled_sensors = list(set(SENSOR_NAMES) - set(self.disabled_sensors))
 
         self.write_interval = write_interval

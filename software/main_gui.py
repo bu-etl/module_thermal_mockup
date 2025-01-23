@@ -1,5 +1,5 @@
 import PySide6.QtWidgets as qtw
-from PySide6.QtCore import Slot, QTimer
+from PySide6.QtCore import Slot, QTimer, Qt
 from PySide6.QtGui import QAction
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import scoped_session, sessionmaker
@@ -7,7 +7,7 @@ from database.env import DATABASE_URI
 from database import models as dm
 import pyqtgraph as pg
 import sys
-from run_config import RunConfigModal, RunConfig
+from run_config import RunConfigModal, RunConfig, ModuleConfig
 from com_port import ComPort
 from module import ModuleController
 import firmware_interface as fw
@@ -75,7 +75,12 @@ class MainWindow(qtw.QMainWindow):
         #---------------------------End of Tool Bar-----------------------------#
 
         central_widget = qtw.QWidget()
-        main_layout = qtw.QVBoxLayout(central_widget)
+        self.main_layout = qtw.QVBoxLayout(central_widget)
+
+        self.run_banner = qtw.QLabel("No run selected")
+        self.run_banner.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.run_banner.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
+        self.main_layout.addWidget(self.run_banner)
 
         readout_btns = qtw.QWidget()
         readout_btn_layout = qtw.QHBoxLayout(readout_btns)
@@ -107,7 +112,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.data_select_dropdown.setCurrentIndex(1)
 
-        main_layout.addWidget(readout_btns)
+        self.main_layout.addWidget(readout_btns)
 
         readout_info = qtw.QWidget()
         readout_info_layout = qtw.QHBoxLayout(readout_info)
@@ -129,7 +134,7 @@ class MainWindow(qtw.QMainWindow):
         self.serial_display.setReadOnly(True)
         readout_info_layout.addWidget(self.serial_display, stretch=0)
 
-        main_layout.addWidget(readout_info)
+        self.main_layout.addWidget(readout_info)
 
         self.setCentralWidget(central_widget)
 
@@ -139,6 +144,33 @@ class MainWindow(qtw.QMainWindow):
         self.select_sensor_dropdown.currentIndexChanged.connect(
             partial(self.select_sensor, self.SensorDataTimePlot, self.sensor_data_time_plots)
         )
+
+        self.run_note = qtw.QWidget()
+        run_note_layout = qtw.QHBoxLayout()
+        self.run_note_text_box = qtw.QTextEdit(self)
+        self.run_note.setFixedHeight(50)  # Set the desired height
+        run_note_layout.addWidget(self.run_note_text_box) 
+        self.submit_run_note_btn = qtw.QPushButton("Submit Note")
+        run_note_layout.addWidget(self.submit_run_note_btn)
+        self.run_note.setLayout(run_note_layout)
+
+        self.submit_run_note_btn.clicked.connect(self.submit_run_note)
+
+        self.main_layout.addWidget(self.run_note)
+
+    @Slot()
+    def submit_run_note(self):
+        # gaurd conditions
+        # if run is not configured dont do anything
+        if not hasattr(self, 'run_config'):
+            return
+        run_note = dm.RunNote(
+            run = self.run_config.Run.run,
+            note = self.run_note_text_box.toPlainText()
+        )
+        self.session.add(run_note)
+        self.session.commit()
+        self.run_note_text_box.clear()
 
     @Slot(int)
     def select_sensor(self, plot_widget, plots: dict, index: int) -> None:
@@ -185,10 +217,13 @@ class MainWindow(qtw.QMainWindow):
                 firmware_name = self.run_config.Microcontroller.firmware_version
 
                 module_controller = ModuleController(
-                    mod_config, 
+                    mod_config.module.name,
+                    mod_config.disabled_sensors,
                     fw.firmware_select(firmware_name), 
                     write_interval=MODULE_WRITE_TIMER
                 )
+                # attach database information to the module controller
+                module_controller.config: ModuleConfig = mod_config
                 
                 self.live_readout_btn.toggled.connect(module_controller.write_timer)
                 for sensor in module_controller.sensors:
@@ -205,6 +240,7 @@ class MainWindow(qtw.QMainWindow):
                 
                 self.module_controllers.append(module_controller)
             self.session.commit() # this is for any new runs that have been added to the session
+            self.run_banner.setText(f"Selected Run: {self.run_config.Run.run}")
 
         else:
             # remove all data and reset the page if there is any
@@ -214,7 +250,6 @@ class MainWindow(qtw.QMainWindow):
     def save_data(self, module_controller:ModuleController, sensor_name:str, raw_adc:str):
         mod_config = module_controller.config
         # print("in save data")
-        print(mod_config, sensor_name, raw_adc)
         data = dm.Data(
             run = self.run_config.Run.run,
             control_board = mod_config.control_board,
