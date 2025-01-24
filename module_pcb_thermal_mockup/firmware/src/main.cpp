@@ -1,5 +1,10 @@
+/*
+Author: Naomi Gonzalez
+Description: This code is used to interface with Software GUI designed to monitor temperature gradient
+in the Thermal Mockup for MTD, ETL upgrade for CMS experiemnt at CERN. 
+*/
+
 #include <Arduino.h>
-// For some reason the compiler needs Command in a header file :|
 #include "command.h"
 
 // Pin Assignments
