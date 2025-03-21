@@ -1520,7 +1520,7 @@
 							)
 						)
 					)
-					(number "13"
+					(number "7"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1538,7 +1538,7 @@
 							)
 						)
 					)
-					(number "25"
+					(number "19"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1549,14 +1549,14 @@
 				(pin input line
 					(at 19.05 11.43 180)
 					(length 4)
-					(name "TP3"
+					(name "TP4"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "25"
+					(number "31"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1567,7 +1567,7 @@
 				(pin input line
 					(at 19.05 8.89 180)
 					(length 4)
-					(name "TP4"
+					(name "TP5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1585,14 +1585,14 @@
 				(pin input line
 					(at 19.05 6.35 180)
 					(length 4)
-					(name "TP4"
+					(name "TP6"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "43"
+					(number "73"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1603,14 +1603,14 @@
 				(pin input line
 					(at 19.05 3.81 180)
 					(length 4)
-					(name "TP5"
+					(name "TP7"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "61"
+					(number "91"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1621,14 +1621,14 @@
 				(pin input line
 					(at 19.05 1.27 180)
 					(length 4)
-					(name "TP6"
+					(name "TP8"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "85"
+					(number "103"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -1639,43 +1639,7 @@
 				(pin input line
 					(at 19.05 -1.27 180)
 					(length 4)
-					(name "TP7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "97"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -3.81 180)
-					(length 4)
-					(name "TP8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "109"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -6.35 180)
-					(length 4)
-					(name "TP8"
+					(name "TP9"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2069,7 +2033,7 @@
 							)
 						)
 					)
-					(number "13"
+					(number "7"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2087,7 +2051,7 @@
 							)
 						)
 					)
-					(number "25"
+					(number "19"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2098,14 +2062,14 @@
 				(pin input line
 					(at 19.05 11.43 180)
 					(length 4)
-					(name "TP3"
+					(name "TP4"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "25"
+					(number "31"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2116,7 +2080,7 @@
 				(pin input line
 					(at 19.05 8.89 180)
 					(length 4)
-					(name "TP4"
+					(name "TP5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2134,14 +2098,14 @@
 				(pin input line
 					(at 19.05 6.35 180)
 					(length 4)
-					(name "TP4"
+					(name "TP6"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "43"
+					(number "73"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2152,14 +2116,14 @@
 				(pin input line
 					(at 19.05 3.81 180)
 					(length 4)
-					(name "TP5"
+					(name "TP7"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "61"
+					(number "91"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2170,14 +2134,14 @@
 				(pin input line
 					(at 19.05 1.27 180)
 					(length 4)
-					(name "TP6"
+					(name "TP8"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "85"
+					(number "103"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2188,43 +2152,7 @@
 				(pin input line
 					(at 19.05 -1.27 180)
 					(length 4)
-					(name "TP7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "97"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -3.81 180)
-					(length 4)
-					(name "TP8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "109"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -6.35 180)
-					(length 4)
-					(name "TP8"
+					(name "TP9"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2618,7 +2546,7 @@
 							)
 						)
 					)
-					(number "13"
+					(number "7"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2636,7 +2564,7 @@
 							)
 						)
 					)
-					(number "25"
+					(number "19"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2647,14 +2575,14 @@
 				(pin input line
 					(at 19.05 11.43 180)
 					(length 4)
-					(name "TP3"
+					(name "TP4"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "25"
+					(number "31"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2665,7 +2593,7 @@
 				(pin input line
 					(at 19.05 8.89 180)
 					(length 4)
-					(name "TP4"
+					(name "TP5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2683,14 +2611,14 @@
 				(pin input line
 					(at 19.05 6.35 180)
 					(length 4)
-					(name "TP4"
+					(name "TP6"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "43"
+					(number "73"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2701,14 +2629,14 @@
 				(pin input line
 					(at 19.05 3.81 180)
 					(length 4)
-					(name "TP5"
+					(name "TP7"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "61"
+					(number "91"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2719,14 +2647,14 @@
 				(pin input line
 					(at 19.05 1.27 180)
 					(length 4)
-					(name "TP6"
+					(name "TP8"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "85"
+					(number "103"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2737,43 +2665,7 @@
 				(pin input line
 					(at 19.05 -1.27 180)
 					(length 4)
-					(name "TP7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "97"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -3.81 180)
-					(length 4)
-					(name "TP8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "109"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -6.35 180)
-					(length 4)
-					(name "TP8"
+					(name "TP9"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3167,7 +3059,7 @@
 							)
 						)
 					)
-					(number "13"
+					(number "7"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3185,7 +3077,7 @@
 							)
 						)
 					)
-					(number "25"
+					(number "19"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3196,14 +3088,14 @@
 				(pin input line
 					(at 19.05 11.43 180)
 					(length 4)
-					(name "TP3"
+					(name "TP4"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "25"
+					(number "31"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3214,7 +3106,7 @@
 				(pin input line
 					(at 19.05 8.89 180)
 					(length 4)
-					(name "TP4"
+					(name "TP5"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3232,14 +3124,14 @@
 				(pin input line
 					(at 19.05 6.35 180)
 					(length 4)
-					(name "TP4"
+					(name "TP6"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "43"
+					(number "73"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3250,14 +3142,14 @@
 				(pin input line
 					(at 19.05 3.81 180)
 					(length 4)
-					(name "TP5"
+					(name "TP7"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "61"
+					(number "91"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3268,14 +3160,14 @@
 				(pin input line
 					(at 19.05 1.27 180)
 					(length 4)
-					(name "TP6"
+					(name "TP8"
 						(effects
 							(font
 								(size 1.27 1.27)
 							)
 						)
 					)
-					(number "85"
+					(number "103"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3286,43 +3178,7 @@
 				(pin input line
 					(at 19.05 -1.27 180)
 					(length 4)
-					(name "TP7"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "97"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -3.81 180)
-					(length 4)
-					(name "TP8"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "109"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 19.05 -6.35 180)
-					(length 4)
-					(name "TP8"
+					(name "TP9"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -9062,73 +8918,6 @@
 	)
 	(symbol
 		(lib_id "Connector:TestPoint")
-		(at 212.09 81.28 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "3188e211-53ea-4456-a66a-cff46e0c592b")
-		(property "Reference" "TP35"
-			(at 214.63 83.3119 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 214.63 85.8519 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 207.01 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 207.01 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 212.09 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "36d0d6dc-74bf-4165-a3cc-04217f0d6544")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP35")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
 		(at 87.63 36.83 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -9712,73 +9501,6 @@
 			(project "module_pcb_thermal_mockup_v4"
 				(path "/5f127344-c1fd-4708-a150-13974322d734"
 					(reference "#PWR013")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 55.88 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "468dac4c-7320-43c5-baf0-7252f6c7180c")
-		(property "Reference" "TP2"
-			(at 58.42 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 58.42 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 50.8 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 50.8 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 55.88 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "236960c5-06a0-4ac9-ad02-609dc75a7801")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP2")
 					(unit 1)
 				)
 			)
@@ -10877,73 +10599,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 157.48 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "676faee4-5e8d-494a-b0de-7ec87388e07b")
-		(property "Reference" "TP23"
-			(at 160.02 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 160.02 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 152.4 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 152.4 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 157.48 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b7dc4d3d-3b70-4afe-8712-9e0d7b508067")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP23")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "unl_silab:AD780")
 		(at 238.76 146.05 0)
 		(unit 1)
@@ -11496,73 +11151,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 107.95 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "782de6c4-a9b0-4d44-a663-464d154755eb")
-		(property "Reference" "TP13"
-			(at 110.49 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 110.49 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 102.87 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 102.87 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 107.95 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "12744e62-2bfd-44f7-8dd5-272c867c3740")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP13")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_name "ETROC_bumpbond_dummy_2")
 		(lib_id "ETL-sym:ETROC_bumpbond_dummy")
 		(at 163.83 60.96 270)
@@ -11629,10 +11217,10 @@
 		(pin "11"
 			(uuid "9c068441-c2a3-49f1-9ffc-f86404cc0728")
 		)
-		(pin "61"
+		(pin "19"
 			(uuid "652d5a09-859e-41ec-a380-5752422b7696")
 		)
-		(pin "43"
+		(pin "31"
 			(uuid "3d0e8494-98df-41ea-9a32-0aa271e01bb6")
 		)
 		(pin "21"
@@ -11644,7 +11232,7 @@
 		(pin "104"
 			(uuid "17c3283f-1602-4544-86a0-be5b2d15606a")
 		)
-		(pin "13"
+		(pin "73"
 			(uuid "db5b8468-5b54-40a9-98fc-99d5684940d9")
 		)
 		(pin "1"
@@ -11653,14 +11241,11 @@
 		(pin "121"
 			(uuid "6b40be2b-6890-4c07-b86e-f6c8edb7eccb")
 		)
-		(pin "97"
+		(pin "91"
 			(uuid "cc764c91-47e9-4681-9fd8-cfd179d6481b")
 		)
-		(pin "109"
+		(pin "103"
 			(uuid "34a7159e-42e8-458c-9414-48a97965bb8d")
-		)
-		(pin "85"
-			(uuid "41ffb75b-58a7-4e90-8e22-8b9939e768f8")
 		)
 		(pin "23"
 			(uuid "67c9eb84-5967-4c7e-8ff7-93e37f8d739c")
@@ -11673,9 +11258,6 @@
 		)
 		(pin "119"
 			(uuid "7c838a81-7574-41f7-b465-cebe0dfd56f9")
-		)
-		(pin "25"
-			(uuid "1b4b3fe4-802f-429e-a896-6006876d3132")
 		)
 		(pin "107"
 			(uuid "ce366e8f-90be-4a0c-ba7f-de25d71da0a4")
@@ -11692,7 +11274,7 @@
 		(pin "5"
 			(uuid "81c8b5b7-dc53-4d89-9dc9-cd664732fa5e")
 		)
-		(pin "25"
+		(pin "7"
 			(uuid "c29c336d-fccf-446a-bec7-e333c1d59ac6")
 		)
 		(pin "83"
@@ -12167,10 +11749,10 @@
 		(pin "11"
 			(uuid "6c10bcab-49af-4247-aed2-5d4851ddaabf")
 		)
-		(pin "61"
+		(pin "7"
 			(uuid "97539d8f-0348-46f2-bde0-e983b84025f0")
 		)
-		(pin "43"
+		(pin "19"
 			(uuid "e8b99135-0941-422b-8189-e59226a4f670")
 		)
 		(pin "21"
@@ -12182,7 +11764,7 @@
 		(pin "104"
 			(uuid "a91921c3-a09d-431f-87ff-106e91def157")
 		)
-		(pin "13"
+		(pin "31"
 			(uuid "37e026bd-46e0-4159-87eb-13c0c16cacda")
 		)
 		(pin "1"
@@ -12191,13 +11773,13 @@
 		(pin "121"
 			(uuid "4ec95196-41fc-464f-9625-577cf6eb6068")
 		)
-		(pin "97"
+		(pin "73"
 			(uuid "2b46480b-6d62-4b46-b361-0cb84467bf25")
 		)
-		(pin "109"
+		(pin "91"
 			(uuid "7d2b60b2-1d26-4404-a10f-ba284a18e9ee")
 		)
-		(pin "85"
+		(pin "103"
 			(uuid "bc124528-1c92-4eea-b972-d60d5aae4744")
 		)
 		(pin "23"
@@ -12211,9 +11793,6 @@
 		)
 		(pin "119"
 			(uuid "19a95dff-9525-44a5-8232-ef83627b6e6b")
-		)
-		(pin "25"
-			(uuid "38f8e56f-d3c3-42e7-bb48-438a7a9430a4")
 		)
 		(pin "107"
 			(uuid "76be8de1-ea73-4dba-ae6a-d2b8e169fe36")
@@ -12229,9 +11808,6 @@
 		)
 		(pin "5"
 			(uuid "fb6cbf34-301b-4300-b043-00de7ec55846")
-		)
-		(pin "25"
-			(uuid "d48fbd24-2631-457c-8075-0d16f47686b1")
 		)
 		(pin "83"
 			(uuid "7fc6dad6-3cb4-4dbd-9952-e153111e5c87")
@@ -12712,10 +12288,10 @@
 		(pin "11"
 			(uuid "6f553440-5e70-47fe-bc81-71d2dc97e0b5")
 		)
-		(pin "61"
+		(pin "7"
 			(uuid "369311b0-cff0-43ca-9083-68a1812b65d9")
 		)
-		(pin "43"
+		(pin "73"
 			(uuid "42c115f7-8491-4918-977b-76e11f6207b4")
 		)
 		(pin "21"
@@ -12727,7 +12303,7 @@
 		(pin "104"
 			(uuid "7b86672e-c5b4-49eb-ac53-41751dd7ebbe")
 		)
-		(pin "13"
+		(pin "91"
 			(uuid "95ed5cc1-cd61-4408-a55a-02509404dca0")
 		)
 		(pin "1"
@@ -12736,13 +12312,13 @@
 		(pin "121"
 			(uuid "5c33ff52-47a5-473f-adf3-7461ff016d03")
 		)
-		(pin "97"
+		(pin "103"
 			(uuid "38e1c465-c007-4167-9899-78ee7f8699ae")
 		)
-		(pin "109"
+		(pin "19"
 			(uuid "65c7377e-3c6f-4360-aab7-08e1c69d5322")
 		)
-		(pin "85"
+		(pin "31"
 			(uuid "e35faf0d-e9fb-4cbf-8bf6-08cc88ebd5ab")
 		)
 		(pin "23"
@@ -12756,9 +12332,6 @@
 		)
 		(pin "119"
 			(uuid "9838f7b2-4799-47a2-ab78-d365d92da897")
-		)
-		(pin "25"
-			(uuid "e60b728c-6921-4285-acfb-8984f1158af1")
 		)
 		(pin "107"
 			(uuid "e1fcd2c1-8446-4d6f-9961-c92f3a451d56")
@@ -12774,9 +12347,6 @@
 		)
 		(pin "5"
 			(uuid "034e86c8-a029-432a-86bc-6d0d32c6cea9")
-		)
-		(pin "25"
-			(uuid "ad95f18f-f6df-41e7-af0c-18560256660b")
 		)
 		(pin "83"
 			(uuid "75a8744e-5f44-4d9e-896e-fb7b7390b67f")
@@ -15138,73 +14708,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 105.41 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "cf0ceb35-a521-4b4c-ab3b-e0ff3bb52760")
-		(property "Reference" "TP12"
-			(at 107.95 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 107.95 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 100.33 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 100.33 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 105.41 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ed3a6b10-1c97-4c1f-8020-2c7302efd8d5")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP12")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "Device:R")
 		(at 16.51 63.5 0)
 		(unit 1)
@@ -15402,73 +14905,6 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 53.34 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "d451fa29-97b7-49a2-b32e-67948eddd6ed")
-		(property "Reference" "TP1"
-			(at 55.88 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 55.88 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 48.26 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 48.26 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 53.34 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "d0db5d62-0e73-4629-98c2-c60673b4b036")
-		)
-		(instances
-			(project ""
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "power:GND")
 		(at 182.88 35.56 180)
 		(unit 1)
@@ -15599,10 +15035,10 @@
 		(pin "11"
 			(uuid "0485781e-0bb4-4b6e-86b6-a3f453bc4d6e")
 		)
-		(pin "61"
+		(pin "7"
 			(uuid "1dfaed96-d0f8-4a78-a17d-ef899073aca2")
 		)
-		(pin "43"
+		(pin "19"
 			(uuid "8ae52d83-8da4-40fb-9fab-b40403a27ddf")
 		)
 		(pin "21"
@@ -15614,7 +15050,7 @@
 		(pin "104"
 			(uuid "5cbbff8a-7560-458e-a3ad-040c9e8307cf")
 		)
-		(pin "13"
+		(pin "31"
 			(uuid "a255e436-a743-4ed1-b837-ea18ec1006ea")
 		)
 		(pin "1"
@@ -15623,13 +15059,13 @@
 		(pin "121"
 			(uuid "b73b3c95-6f37-4b97-9d82-bac8e9b7d94d")
 		)
-		(pin "97"
+		(pin "73"
 			(uuid "ee904edf-8087-4159-8cdb-017a9c00f967")
 		)
-		(pin "109"
+		(pin "91"
 			(uuid "0d25c35d-3501-4f0e-818b-5a0be113ef8e")
 		)
-		(pin "85"
+		(pin "103"
 			(uuid "36ed10a9-7bdc-494e-94e5-46bd4d1f463a")
 		)
 		(pin "23"
@@ -15643,9 +15079,6 @@
 		)
 		(pin "119"
 			(uuid "01a29c29-3b21-4dec-ba6a-a0f606ed00b9")
-		)
-		(pin "25"
-			(uuid "480be81c-5b73-4bf9-aebc-ff3d63325595")
 		)
 		(pin "107"
 			(uuid "5df9443c-de99-46b7-ad87-6414d875dcff")
@@ -15661,9 +15094,6 @@
 		)
 		(pin "5"
 			(uuid "99985656-019e-4e59-af16-454671f2d280")
-		)
-		(pin "25"
-			(uuid "7ce7b3af-7246-478a-839f-c91c6aaac451")
 		)
 		(pin "83"
 			(uuid "70e643c8-8c2e-401c-936d-5e147356e714")
@@ -16007,73 +15437,6 @@
 	)
 	(symbol
 		(lib_id "Connector:TestPoint")
-		(at 209.55 81.28 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "e13bd406-f94a-47a2-93de-a87bce8641e9")
-		(property "Reference" "TP34"
-			(at 212.09 83.3119 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 212.09 85.8519 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 204.47 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 204.47 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 209.55 81.28 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "e0a01f63-67a6-4be7-8fd7-0470fdf0e6dc")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP34")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
 		(at 118.11 80.01 180)
 		(unit 1)
 		(exclude_from_sim no)
@@ -16200,73 +15563,6 @@
 			(project "module_pcb_thermal_mockup_v4"
 				(path "/5f127344-c1fd-4708-a150-13974322d734"
 					(reference "#PWR0122")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Connector:TestPoint")
-		(at 160.02 80.01 180)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ef1bd45d-78f3-46c0-9915-ccedc0ecb0a2")
-		(property "Reference" "TP24"
-			(at 162.56 82.0419 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 162.56 84.5819 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-		(property "Footprint" ""
-			(at 154.94 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 154.94 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "test point"
-			(at 160.02 80.01 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "115efa5b-6e9e-4e7f-b11f-5b20983cdc56")
-		)
-		(instances
-			(project "design-files_TM"
-				(path "/5f127344-c1fd-4708-a150-13974322d734"
-					(reference "TP24")
 					(unit 1)
 				)
 			)
