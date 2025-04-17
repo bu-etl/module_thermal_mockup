@@ -449,6 +449,41 @@ void temp_probe(Command cmd) {
   //Serial.println(F("TEMPERATURE READOUT COMPLETE\n"));
 }
 
+void bb_path(Command cmd) {
+  if (cmd.nargs == 0){
+    Serial.println(F("ERROR: No TP number selected for measurement"));
+    return;
+  }
+
+  for (uint8_t j=0; j<cmd.nargs; j++){
+    byte bb_path_id = cmd.args[j].toInt();
+
+    int analog_pin;
+    switch (bb_path_id) {
+      // A0, A1, A2 and A3 are already defined in the header file from Arduino.h
+      case 1:
+        analog_pin = A0;
+        break;
+      case 2:
+        analog_pin = A1;
+        break;
+      case 3:
+        analog_pin = A2;
+        break;
+      case 4:
+        analog_pin = A3;
+        break;
+      default:
+        Serial.println("ERROR: Invalid bb path id. Choices: 1, 2, 3, and 4");
+        return;
+    }
+    delay(320);
+    int rawValue = analogRead(analog_pin);
+    float voltage = rawValue * (3.3 / 1023.0);
+    Serial.println("TP" + String(bb_path_id) + " " + String(voltage));
+    delay(500);
+  }
+}
 
 /* ----------------------------------------------------- 
   Setup 
@@ -466,11 +501,19 @@ CommandEntry command_table[] = {
   {"filter", filter},
   {"id", id},
   {"probe", temp_probe},
+  {"TP", bb_path},
   {NULL, NULL}
 };
 
 void setup() {
-  // put your setup code here, to run once:
+  // Used for BB readout to set the analog reference voltage to external. 
+  // You need to connect AREF to 3.3V!!!
+  analogReference(EXTERNAL);
+  pinMode(A0, INPUT);
+  pinMode(A1, INPUT);
+  pinMode(A2, INPUT);
+  pinMode(A3, INPUT);
+
   pinMode(PIN_CLK, OUTPUT);
   pinMode(PIN_DIN, OUTPUT);
   pinMode(PIN_CSB, OUTPUT);
