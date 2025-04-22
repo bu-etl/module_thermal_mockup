@@ -10,6 +10,7 @@ import sys
 from run_config import RunConfigModal, RunConfig, ModuleConfig
 from com_port import ComPort
 from module import ModuleController
+from bump_bond_monitor import BumpBondMonitor
 import firmware_interface as fw
 from functools import partial
 from datetime import datetime
@@ -158,6 +159,9 @@ class MainWindow(qtw.QMainWindow):
 
         self.main_layout.addWidget(self.run_note)
 
+        self.BB_monitor = BumpBondMonitor("boop")
+        self.main_layout.addWidget(self.BB_monitor)
+
     @Slot()
     def submit_run_note(self):
         # gaurd conditions
@@ -239,6 +243,7 @@ class MainWindow(qtw.QMainWindow):
                 module_controller.read[ModuleController, str, str].connect(self.save_data)
                 
                 self.module_controllers.append(module_controller)
+
             self.session.commit() # this is for any new runs that have been added to the session
             self.run_banner.setText(f"Selected Run: {self.run_config.Run.run}")
 

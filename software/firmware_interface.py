@@ -3,6 +3,9 @@ These classes tell you how to read sensor data from a module
 based on different firmware versions
 """
 from abc import ABC, abstractmethod
+import re
+from typing import Any
+
 class ModuleFirmwareInterface(ABC):
     """Abstract base class to enforce the read and write methods of inherited classes"""
     
@@ -26,6 +29,15 @@ class ModuleFirmwareInterface(ABC):
         """line length of from the serial monitor so for example: "measure 1 72a4ff" or "Probe 1: 0xb53" """
         ...
 
+    @abstractmethod
+    def write_bb(self, tp_n: list[int]):
+        """Command to read the bump bond values"""
+        ...
+    
+    @abstractmethod
+    def read_bb(self, raw_output: str) -> tuple[Any, Any]:
+        """Should return the bb path id and then the output"""
+        ...
 
 class ControlBoardV1(ModuleFirmwareInterface):
     __firmware_name__ = "Control Board V1"
@@ -63,7 +75,10 @@ class ControlBoardV1(ModuleFirmwareInterface):
             return 22
         else:
             raise NotImplementedError(f'unknown sensor name: {sensor_name}') 
-           
+    
+    def write_bb(self, tp_n: list[int]) -> str:
+        raise NotImplementedError("Needs to be implementented")
+    
 class ThermalMockupV2(ModuleFirmwareInterface):
     __firmware_name__ = "Thermal Mockup V2"
 
@@ -110,8 +125,35 @@ class ThermalMockupV2(ModuleFirmwareInterface):
             return 16
         else:
             raise NotImplementedError(f'unknown sensor name: {sensor_name}') 
-           
+        
+    def write_bb(self, tp_n: list[int]) -> str:
+        """
+        If the arduino has the automatic bump bond readout through the analog pins as defined:
+        https://bu.nebraskadetectorlab.com/submission/shared/3724/ZRg7YayBwd3sNfJXLnzcIFojWbO2De
 
+        This command yields the string to send that command.
+        """
+        if isinstance(tp_n, list):
+            if len(tp_n) == 0:
+                raise ValueError("List length cannot be 0")
+            return f"TP " + ' '.join(map(str,tp_n))
+        elif isinstance(tp_n, int):
+            return f"TP {tp_n}"
+        elif isinstance(tp_n, None):
+            return "TP 1 2 3 4"
+        else:
+            raise TypeError(f"Invalid input type: {type(tp_n)}")
+        
+    def read_bb(self, raw_output: str) -> tuple[int, float]:
+        """Returns the bump bond path id and the corresponding value if string matches"""
+        if not isinstance(raw_output, str):
+            return
+        pattern = re.compile(r"^TP(\d+) (\S+)$")
+        match = re.match(pattern, raw_output)
+        if match:
+            bb_path_id, raw_value = match.groups()
+            return int(bb_path_id), float(raw_value)
+           
 def available_firmwares():
     return [subclass.__firmware_name__ for subclass in ModuleFirmwareInterface.__subclasses__()]
 

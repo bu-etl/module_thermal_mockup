@@ -5,6 +5,9 @@ from firmware_interface import ModuleFirmwareInterface
 SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4", "P1", "P2", "P3"]
 
 class Sensor:
+    """
+    Used for reading out the temperature of a sensor on the thermal mockup
+    """
     def __init__(self, name: str, firmware_interface: ModuleFirmwareInterface):
         self.name = name
         self.firmware_interface = firmware_interface
@@ -57,6 +60,7 @@ class Sensor:
 
 class ModuleController(QWidget):
     """
+    Used for reading out the temperatures on the thermal mockup module
     Signals: write \n
     Slots: read, _write, live_readout
     """
