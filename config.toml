@@ -1,12 +1,12 @@
 [RUN]
 run = 48
-MODE = "DEBUG"
-COLD_PLATE = "Pretty Double Loop Solder Plate"
-COMMENT = "starting the bump bond monitor"
+# MODE = "DEBUG"
+# COLD_PLATE = "Pretty Double Loop Solder Plate"
+# COMMENT = "starting the bump bond monitor"
 
 [MICROCONTROLLER]
 firmware_version = "Thermal Mockup V2"
-port = "ttyACM0"
+port = "ttyACM1"
 
 [[MODULES]]
 module = "TM2"

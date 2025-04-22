@@ -3,18 +3,24 @@ This widget is used to readout the bump bonds and plot
 """
 import PySide6.QtWidgets as qtw
 import pyqtgraph as pg
-from PySide6.QtCore import Slot, QTimer, Qt
+from PySide6.QtCore import Slot, QTimer, Qt, Signal
 from firmware_interface import ModuleFirmwareInterface
 from com_port import ComPort
+from datetime import datetime
+import time
+
 class BumpBondMonitor(qtw.QWidget):
-    
-    def __init__(self, name: str, bb_path_ids: list, firmware: ModuleFirmwareInterface, com_port: ComPort):
+    # write = Signal(str)
+
+    def __init__(self, name: str, bb_path_ids: list, firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer):
         super(BumpBondMonitor, self).__init__()
 
         self.name = name
+        self.bb_path_ids = bb_path_ids
         self.firmware = firmware
         self.com_port = com_port
-        self.bb_path_ids = bb_path_ids
+        self.timer = timer
+
         self.measurement_pendings = {bb_id: False for bb_id in bb_path_ids}
 
         # layout with a button and empty plot that can hide/show
@@ -25,50 +31,65 @@ class BumpBondMonitor(qtw.QWidget):
         self.button.setCheckable(True)
         self.main_layout.addWidget(self.button)
 
-        self.BB_Plot = pg.PlotWidget(background="#f5f5f5")
-        self.BB_Plot.showGrid(x=True, y=True)
-        self.BB_Plot.setLabel('left', 'Resistance')
-        self.BB_Plot.setLabel('bottom', 'Minutes')
+        self.bb_plot = pg.plot(title="Three plot curves")
+        self.bb_plot.showGrid(x=True, y=True)
+        self.bb_plot.setLabel('left', 'Resistance')
+        self.bb_plot.setLabel('bottom', 'Minutes')
 
         self.button.clicked.connect(self.toggle_show)
-        self.main_layout.addWidget(self.BB_Plot)
-
-        self.reading_timer = QTimer()
-        self.reading_timer.timeout.connect(self.read_bb)
-        self.reading_timer.start(3000)
-
+        self.main_layout.addWidget(self.bb_plot)
 
         self.temp_save = {bb_id: [] for bb_id in bb_path_ids}
 
+        # READ AND SAVE SIGNAL/SLOTS
+        #self.write[str].connect(self.com_port._write)
+        self.com_port.read[str].connect(self.save)
+
+        self.timer.timeout.connect(self.write_bb)
+        self.timer.timeout.connect(self.update_plot)
+
     def toggle_show(self):
-        self.BB_Plot.setVisible(not self.BB_Plot.isVisible())
+        self.bb_plot.setVisible(not self.bb_plot.isVisible())
 
     def save(self, raw_output: str):
         # will need to extract bb id
         # will need to extract raw_adc from it
-
+        print("saving")
         data = self.firmware.read_bb(raw_output)
+        print(data)
         if not data:
             return
     
         bb_path_id, value = data
+        if bb_path_id not in self.bb_path_ids:
+            return
 
         # convert to resistance?  yea but for now just do voltage
         self.measurement_pendings[bb_path_id] = False
 
         # do the saving for now just append to list will go to db later
         # will need to pass in the db session but its fine
-        self.temp_save[bb_path_id].append(value)
-        
-    def write_bb(self, bb_path_ids: list[int]):
-        if not all(self.measurement_pendings.values()):
-            """Make sure you have read all values before trying to read bumps again"""
+        self.temp_save[bb_path_id].append((time.perf_counter(), value))
+    
+    def write_bb(self):
+        if all(self.measurement_pendings.values()):
+            # Make sure you have read all values before trying to read bumps again
             return
-        command = self.firmware.write_bb(bb_path_ids)
-        self.com_port._write(command)
-        for bb_id in bb_path_ids:
+        command = self.firmware.write_bbs(self.bb_path_ids)
+        for bb_id in self.bb_path_ids:
             self.measurement_pendings[bb_id] = True
 
+        self.com_port._write(command)
+        return command
+    
     def update_plot(self):
-        ...
         # this should fetch whatever is in the db and plot it periodically
+        for bb_id, data in self.temp_save.items():
+            if not data:
+                continue
+            y_data = [d[1] for d in data]
+            x_data = [d[0] for d in data]
+
+            self.bb_plot.plot(x_data, y_data, 
+                              pen=(bb_id,len(self.bb_path_ids)))
+

@@ -9,7 +9,7 @@ import pyqtgraph as pg
 import sys
 from run_config import RunConfigModal, RunConfig, ModuleConfig
 from com_port import ComPort
-from module import ModuleController
+from module import ModuleTemperatureMonitor
 from bump_bond_monitor import BumpBondMonitor
 import firmware_interface as fw
 from functools import partial
@@ -29,7 +29,7 @@ class MainWindow(qtw.QMainWindow):
         Session = scoped_session(sessionmaker(bind=engine))
         self.session = Session()
         #--------------------------------------------------------#
-        self.module_controllers: list[ModuleController] = []
+        self.module_temperature_monitors: list[ModuleTemperatureMonitor] = []
         #--------------------------------MENU BAR-------------------------------#
         self.menu = self.menuBar()
 
@@ -69,10 +69,6 @@ class MainWindow(qtw.QMainWindow):
         self.calibrate_adc = self.write_adc_action('Calibrate', 'calibrate')
         toolbar.addAction(self.calibrate_adc)
 
-        no_measurement_pending_action = QAction("no_measurement_pending", self)
-        no_measurement_pending_action.triggered.connect(self.no_measurement_pending)
-        
-        toolbar.addAction(no_measurement_pending_action)
         #---------------------------End of Tool Bar-----------------------------#
 
         central_widget = qtw.QWidget()
@@ -83,68 +79,32 @@ class MainWindow(qtw.QMainWindow):
         self.run_banner.setStyleSheet("color: blue; font-size: 16px; font-weight: bold;")
         self.main_layout.addWidget(self.run_banner)
 
+
         readout_btns = qtw.QWidget()
         readout_btn_layout = qtw.QHBoxLayout(readout_btns)
 
+        self.update_timer = QTimer()
         self.live_readout_btn = qtw.QPushButton('Start', self)
         self.live_readout_btn.setCheckable(True)
         self.live_readout_btn.toggled.connect(
             lambda checked: self.live_readout_btn.setText('Start' if not checked else 'Stop')
         )
-        readout_btn_layout.addWidget(self.live_readout_btn, stretch=1)
-
-        # >>  SELECT PLOT LINE WIDGET
-        self.select_sensor_dropdown = qtw.QComboBox()
-        self.select_sensor_dropdown.addItem('Select Sensor')
-        readout_btn_layout.addWidget(self.select_sensor_dropdown, stretch=0)
-
-        self.data_select_dropdown = qtw.QComboBox()
-        self.data_select_dropdown.addItem('Data Type')
-        readout_btn_layout.addWidget(self.data_select_dropdown, stretch=0)
-        self.data_select_dropdown.addItem(
-            "volts", "volts"
-        )    
-        self.data_select_dropdown.addItem(
-            "ohms", "ohms"
-        )
-        self.data_select_dropdown.addItem(
-            "celcius", "celcius"
+        self.live_readout_btn.toggled.connect(
+            lambda checked: self.update_timer.start(1500) if checked else self.update_timer.stop()
         )
 
-        self.data_select_dropdown.setCurrentIndex(1)
+        readout_btn_layout.addWidget(self.live_readout_btn, stretch=1)  
 
         self.main_layout.addWidget(readout_btns)
 
-        readout_info = qtw.QWidget()
-        readout_info_layout = qtw.QHBoxLayout(readout_info)
-
-        self.SensorDataTimePlot = pg.PlotWidget(title="Sensor Data Over Time", background="#f5f5f5")
-        self.SensorDataTimePlot.addLegend()
-        self.SensorDataTimePlot.showGrid(x=True, y=True)
-        self.SensorDataTimePlot.setLabel('left', 'Data')  # Y-axis label
-        self.SensorDataTimePlot.setLabel('bottom', 'Minutes')  # X-axis label
-        self.sensor_data_time_plots = {}
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_plot)
-        self.timer.start(UPDATE_PLOT_TIMER)  # Update every X ms
-
-        readout_info_layout.addWidget(self.SensorDataTimePlot, stretch=1)
-
         self.serial_display = qtw.QPlainTextEdit()
         self.serial_display.setReadOnly(True)
-        readout_info_layout.addWidget(self.serial_display, stretch=0)
-
-        self.main_layout.addWidget(readout_info)
+        self.main_layout.addWidget(self.serial_display, stretch=0)
 
         self.setCentralWidget(central_widget)
 
         self.com_port.log_message[str].connect(self.log) 
         self.com_port.read[str].connect(self.log)
-
-        self.select_sensor_dropdown.currentIndexChanged.connect(
-            partial(self.select_sensor, self.SensorDataTimePlot, self.sensor_data_time_plots)
-        )
 
         self.run_note = qtw.QWidget()
         run_note_layout = qtw.QHBoxLayout()
@@ -159,8 +119,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.main_layout.addWidget(self.run_note)
 
-        self.BB_monitor = BumpBondMonitor("boop")
-        self.main_layout.addWidget(self.BB_monitor)
+        self.configure_from_run_config()
 
     @Slot()
     def submit_run_note(self):
@@ -176,18 +135,6 @@ class MainWindow(qtw.QMainWindow):
         self.session.commit()
         self.run_note_text_box.clear()
 
-    @Slot(int)
-    def select_sensor(self, plot_widget, plots: dict, index: int) -> None:
-        for live_plot in plots.values():
-            plot_widget.removeItem(live_plot)       
-        if index <= 0:
-            #select all sensors
-            for live_plot in plots.values():
-               plot_widget.addItem(live_plot)
-        elif index > 0:
-            #select singular sensor
-            module_sensor_name = self.select_sensor_dropdown.currentText()
-            plot_widget.addItem(plots[module_sensor_name])
 
     def write_adc_action(self, name: str, adc_command: str) -> QAction:
         """
@@ -196,11 +143,6 @@ class MainWindow(qtw.QMainWindow):
         write_action = QAction(name, self)
         write_action.triggered.connect(partial(self.com_port._write, adc_command))
         return write_action
-
-    def no_measurement_pending(self):
-        for mod_cont in self.module_controllers:
-            for sensor in mod_cont.sensors:
-                sensor.measurement_pending = False
 
     @Slot()
     def configure_from_run_config(self):
@@ -211,6 +153,7 @@ class MainWindow(qtw.QMainWindow):
         run_config_modal = RunConfigModal(self.session)
 
         if run_config_modal.exec():
+            
             self.run_config: RunConfig = run_config_modal.run_config
             self.com_port.connect_by_name(self.run_config.Microcontroller.port)
             
@@ -220,29 +163,27 @@ class MainWindow(qtw.QMainWindow):
             for mod_config in self.run_config.Modules:
                 firmware_name = self.run_config.Microcontroller.firmware_version
 
-                module_controller = ModuleController(
-                    mod_config.module.name,
-                    mod_config.disabled_sensors,
-                    fw.firmware_select(firmware_name), 
-                    write_interval=MODULE_WRITE_TIMER
+                firmware = fw.firmware_select(firmware_name)
+
+                module = ModuleTemperatureMonitor(
+                    self.run_config.Run.run,
+                    mod_config,
+                    firmware,
+                    self.com_port,
+                    self.update_timer,
+                    self.session
                 )
-                # attach database information to the module controller
-                module_controller.config: ModuleConfig = mod_config
+                self.module_temperature_monitors.append(module)
+                self.main_layout.addWidget(module)
+
+                self.BB_monitor = BumpBondMonitor(
+                    mod_config.module.name, 
+                    [1,2,3,4], 
+                    firmware, 
+                    self.com_port,
+                    self.update_timer)
                 
-                self.live_readout_btn.toggled.connect(module_controller.write_timer)
-                for sensor in module_controller.sensors:
-                    self.select_sensor_dropdown.addItem(f"{module_controller.name}_{sensor.name}", sensor)
-                    # Initialize plotItem for each sensor name
-                    self.sensor_data_time_plots[f"{module_controller.name}_{sensor.name}"] = self.SensorDataTimePlot.plot(
-                        [], [], #x, y
-                        pen=module_controller.color_map[sensor.name], 
-                        name=f"{module_controller.name}_{sensor.name}"
-                    )
-                module_controller.write[str].connect(self.com_port._write)
-                self.com_port.read[str].connect(module_controller.read_sensor)
-                module_controller.read[ModuleController, str, str].connect(self.save_data)
-                
-                self.module_controllers.append(module_controller)
+                self.main_layout.addWidget(self.BB_monitor)
 
             self.session.commit() # this is for any new runs that have been added to the session
             self.run_banner.setText(f"Selected Run: {self.run_config.Run.run}")
@@ -251,59 +192,6 @@ class MainWindow(qtw.QMainWindow):
             # remove all data and reset the page if there is any
             # if theres not do nothing!
             print("Cancel!")
-
-    def save_data(self, module_controller:ModuleController, sensor_name:str, raw_adc:str):
-        mod_config = module_controller.config
-        # print("in save data")
-        data = dm.Data(
-            run = self.run_config.Run.run,
-            control_board = mod_config.control_board,
-            control_board_position = mod_config.control_board_position,
-            module = mod_config.module,
-            module_orientation = mod_config.orientation,
-            plate_position = mod_config.cold_plate_position,
-            sensor = sensor_name,
-            timestamp = datetime.now(),
-            raw_adc = raw_adc
-        )
-
-        self.session.add(data)
-        self.session.commit()
-
-    # NEED THIS TO TRIGGER EVERY 3 or so seconds and read from db
-    @Slot(int)
-    def update_plot(self) -> None:
-        if not hasattr(self, "run_config"):
-            return
-        for mod_controller in self.module_controllers:
-            for sensor in mod_controller.enabled_sensors:
-                query = select(dm.Data).where(
-                    dm.Data.run==self.run_config.Run.run, 
-                    dm.Data.sensor==sensor, 
-                    dm.Data.module == mod_controller.config.module
-                )
-
-                data = self.session.execute(query).scalars().all()
-                if not data:
-                    return
-                
-                t0 = data[0].timestamp
-                elapsed_time = lambda t: (t - t0).total_seconds() / 60 
-                elapsed_times = [elapsed_time(d.timestamp) for d in data]
-
-                if self.data_select_dropdown.currentData() == "volts":
-                    y_data = [d.volts for d in data if d.volts is not None]
-                elif self.data_select_dropdown.currentData() == "ohms":
-                    y_data = [d.ohms for d in data if d.ohms is not None]
-                elif self.data_select_dropdown.currentData() == "celcius":
-                     y_data = [d.celcius for d in data if d.celcius is not None]              
-                else:
-                    elapsed_times = []
-                    y_data = []             
-
-                self.sensor_data_time_plots[f"{mod_controller.name}_{sensor}"].setData(
-                    elapsed_times, y_data
-                )
     
     @Slot(str)
     def log(self, text: str) -> None:

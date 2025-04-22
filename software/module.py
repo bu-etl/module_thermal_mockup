@@ -1,84 +1,39 @@
 from PySide6.QtWidgets import QWidget
+import PySide6.QtWidgets as qtw
+import pyqtgraph as pg
 from PySide6.QtCore import Signal, Slot, QTimer
 #from run_config import ModuleConfig
 from firmware_interface import ModuleFirmwareInterface
+from com_port import ComPort
+from sqlalchemy.orm import scoped_session
+from database import models as dm
+from datetime import datetime
+from run_config import ModuleConfig
+from sqlalchemy import select
+from functools import partial
+
 SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4", "P1", "P2", "P3"]
 
-class Sensor:
-    """
-    Used for reading out the temperature of a sensor on the thermal mockup
-    """
-    def __init__(self, name: str, firmware_interface: ModuleFirmwareInterface):
-        self.name = name
-        self.firmware_interface = firmware_interface
-        self.measurement_pending = False #makes sure the # of reads and # of writes are equal
-
-        #Store the last readout to check for this case:
-        # > meas
-        # > ure 1 7250ff
-        self.last_readout = ''
-
-    def read_adc(self, data:str) -> None | str:
-        """
-        Reads the output from the ADC, form is something like "measure 1 72a4ff"
-        """
-        data = data.lower()
-        #print(self.name, data, len(data))
-        validated_adc_value = None
-
-        #first check if data was split over two lines, sometimes happens
-        measure_adc_command = self.firmware_interface.write_sensor(self.name)
-        merged_line_data = self.last_readout + data
-        expected_data_length = self.firmware_interface.data_line_length(self.name) #len(self.measure_adc_command) + self.raw_adc_length + 1 #+1 for the space between "measure 1" and raw_adc, total is 16 
-        data_was_split = (
-            (merged_line_data).count(measure_adc_command)==1 #if data was split, the merged data should only contain the measure_adc_command once
-            and 
-            merged_line_data.startswith(measure_adc_command) #cleans rare case where previous cut off is same length as current cut off
-            and
-            len(merged_line_data)==expected_data_length #its length should also be something like len("measure 1 72a4ff"), prevents cases like "measure 1 72a4ffmeasure 2 72a4ff"
-        )
-        if data_was_split:
-            data = merged_line_data
-        
-        #check if command is in data
-        if measure_adc_command in data and len(data) == expected_data_length:
-            raw_adc = self.firmware_interface.read_sensor(data)
-            if raw_adc != '0' or not raw_adc:
-                #sometimes raw_adc can give 0, skip append for these
-                validated_adc_value = raw_adc
-            self.measurement_pending = False
-
-        #for checking split lines on arduino
-        self.last_readout = data
-
-        if validated_adc_value is not None:
-            return validated_adc_value
-        
-    def __repr__(self):
-        return f"Sensor(name={self.name!r})"
-
-
-class ModuleController(QWidget):
+class ModuleTemperatureMonitor(QWidget):
     """
     Used for reading out the temperatures on the thermal mockup module
-    Signals: write \n
-    Slots: read, _write, live_readout
     """
-    write = Signal(str) # Signal to propogate to Sensors
-    read = Signal(QWidget,str,str)
 
-    def __init__(self, name: str, disabled_sensors: list, firmware_interface: ModuleFirmwareInterface, write_interval:int=1000):
-        super(ModuleController, self).__init__()
+    def __init__(self, run:dm.Run, config: ModuleConfig, firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer, db_session: scoped_session):
+        super(ModuleTemperatureMonitor, self).__init__()
 
-        #self.config = config
-        #self.name = self.config.module.name
-        #self.disabled_sensors = self.config.disabled_sensors
-        self.name = name
-        self.disabled_sensors = disabled_sensors
+        self.run = run
+        self.config = config
+        self.name = self.config.module.name
+        self.disabled_sensors = self.config.disabled_sensors
+
         self.enabled_sensors = list(set(SENSOR_NAMES) - set(self.disabled_sensors))
+        self.firmware = firmware
+        self.com_port = com_port
+        self.timer = timer
+        self.session = db_session
 
-        self.write_interval = write_interval
-        self.firmware_interface = firmware_interface
+        self.measurement_pendings = {s: False for s in self.enabled_sensors}
 
         self.color_map = {
             "E3": "#9e0202", #dark red
@@ -94,40 +49,121 @@ class ModuleController(QWidget):
             "P3": "black"
         }
 
-        self.sensors = [Sensor(sensor_name, firmware_interface) for sensor_name in self.enabled_sensors]
+        self.main_layout = qtw.QVBoxLayout(self)
+        self.setLayout(self.main_layout)
 
-    @Slot()
-    def write_timer(self, start: bool):
-        if start:
-            self.timer = QTimer()
-            self.timer.timeout.connect(self._write)
-            self.timer.start(self.write_interval)  # Update every X ms
-        elif not start and hasattr(self, 'timer'):
-            self.timer.stop()
+        self.select_sensor_dropdown = qtw.QComboBox()
+        self.select_sensor_dropdown.addItem('Select Sensor')
+        self.main_layout.addWidget(self.select_sensor_dropdown, stretch=0)
 
-    @Slot(str)
-    def read_sensor(self, data:str):
-        # when com port reads, trigger read for all 8 sensors, 
-        #   -> each sensor has logic to know if the data is for that sensor or not
-        for sensor in self.sensors:
-            raw_adc_value = sensor.read_adc(data)
-            if raw_adc_value is not None:
-                self.read.emit(self, sensor.name, raw_adc_value)
+        self.data_select_dropdown = qtw.QComboBox()
+        self.data_select_dropdown.addItem('Data Type')
+        self.main_layout.addWidget(self.data_select_dropdown, stretch=0)
+        self.data_select_dropdown.addItem(
+            "volts", "volts"
+        )    
+        self.data_select_dropdown.addItem(
+            "ohms", "ohms"
+        )
+        self.data_select_dropdown.addItem(
+            "celcius", "celcius"
+        )
 
-    @Slot()
-    def _write(self):
-        #manually write depending on number of channels
-        #print({sensor.name:sensor.measurement_pending for sensor in self.sensors})
-        if all([not sensor.measurement_pending for sensor in self.sensors]):
-            # the emit is the data that gets sent to the com port
-            self.write.emit(
-                self.firmware_interface.write_sensors(self.enabled_sensors)
+        self.data_select_dropdown.setCurrentIndex(1)
+
+        self.button = qtw.QPushButton(self.name, self)
+        self.button.setCheckable(True)
+        self.main_layout.addWidget(self.button)
+
+        self.temperature_plot = pg.plot(title="Temperature Monitor", background="#f5f5f5")
+        self.temperature_plot.showGrid(x=True, y=True)
+        self.temperature_plot.setLabel('left', 'Data')
+        self.temperature_plot.setLabel('bottom', 'Minutes')
+
+        self.button.clicked.connect(self.toggle_show)
+        self.main_layout.addWidget(self.temperature_plot, stretch=1)
+
+        self.temp_save = {s: [] for s in self.enabled_sensors}
+
+        self.com_port.read[str].connect(self.save)
+        self.timer.timeout.connect(self.write_sensors)
+        self.timer.timeout.connect(self.update_plot)
+
+    def toggle_show(self):
+        self.temperature_plot.setVisible(not self.temperature_plot.isVisible())
+
+    def save(self, raw_output:str):
+        # i love python
+        data = self.firmware.read_sensor(raw_output) or self.firmware.read_probe(raw_output)
+        if not data:
+            return
+
+        sensor, raw_value = data
+        if sensor not in self.enabled_sensors:
+            return
+        
+        self.measurement_pendings[sensor] = False
+
+        # print("in save data")
+        data = dm.Data(
+            run = self.run,
+            control_board = self.config.control_board,
+            control_board_position = self.config.control_board_position,
+            module = self.config.module,
+            module_orientation = self.config.orientation,
+            plate_position = self.config.cold_plate_position,
+            sensor = sensor,
+            timestamp = datetime.now(),
+            raw_adc = raw_value
+        )
+
+        self.session.add(data)
+        self.session.commit()
+
+    def write_sensors(self) -> str:
+        if all(self.measurement_pendings.values()):
+            # Make sure you have read all values before trying to read bumps again
+            return
+        
+        # have to do it like this because I was dumb before and combined probes and silicon sensors...
+        sensor_names = [s for s in self.enabled_sensors if 'p' not in s.lower()]
+        probe_names = [p for p in self.enabled_sensors if 'p' in p.lower()]
+        command = self.firmware.write_sensors(sensor_names) + "\n"  + self.firmware.write_probes(probe_names)
+        self.com_port._write(command)
+
+        # measurements are now pending!
+        for s in self.enabled_sensors:
+            self.measurement_pendings[s] = True
+
+        return command
+    
+    def update_plot(self):
+        for i, sensor in enumerate(self.enabled_sensors):
+            query = select(dm.Data).where(
+                dm.Data.run==self.run, 
+                dm.Data.sensor==sensor, 
+                dm.Data.module == self.config.module
             )
-            #update the status of the sensors so that they cannot be written to again until data has been read
-            for sensor in self.sensors:
-                sensor.measurement_pending = True
 
-    def sensor(self, sensor_name) -> Sensor:
-        for sensor in self.sensors:
-            if sensor.name == sensor_name:
-                return sensor
+            data = self.session.execute(query).scalars().all()
+            if not data:
+                return
+            
+            t0 = data[0].timestamp
+            elapsed_time = lambda t: (t - t0).total_seconds() / 60 
+            elapsed_times = [elapsed_time(d.timestamp) for d in data]
+
+            if self.data_select_dropdown.currentData() == "volts":
+                y_data = [d.volts for d in data if d.volts is not None]
+            elif self.data_select_dropdown.currentData() == "ohms":
+                y_data = [d.ohms for d in data if d.ohms is not None]
+            elif self.data_select_dropdown.currentData() == "celcius":
+                    y_data = [d.celcius for d in data if d.celcius is not None]              
+            else:
+                elapsed_times = []
+                y_data = []             
+
+            self.temperature_plot.plot(
+                elapsed_times, y_data,
+                pen=(i, len(self.sensors))
+            )
