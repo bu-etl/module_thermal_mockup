@@ -15,9 +15,8 @@ import firmware_interface as fw
 from functools import partial
 from datetime import datetime
 
-MODULE_WRITE_TIMER = 1500
 COM_PORT_TIMER = 500
-UPDATE_PLOT_TIMER = 1500
+UPDATE_TIMER = 10_000
 
 class MainWindow(qtw.QMainWindow):
     def __init__(self):
@@ -90,7 +89,7 @@ class MainWindow(qtw.QMainWindow):
             lambda checked: self.live_readout_btn.setText('Start' if not checked else 'Stop')
         )
         self.live_readout_btn.toggled.connect(
-            lambda checked: self.update_timer.start(1500) if checked else self.update_timer.stop()
+            lambda checked: self.update_timer.start(UPDATE_TIMER) if checked else self.update_timer.stop()
         )
 
         readout_btn_layout.addWidget(self.live_readout_btn, stretch=1)  
@@ -118,6 +117,12 @@ class MainWindow(qtw.QMainWindow):
         self.submit_run_note_btn.clicked.connect(self.submit_run_note)
 
         self.main_layout.addWidget(self.run_note)
+
+        self.module_plots_container = qtw.QWidget()
+        self.module_layout = qtw.QHBoxLayout()
+        self.module_plots_container.setLayout(self.module_layout)
+
+        self.main_layout.addWidget(self.module_plots_container)
 
         self.configure_from_run_config()
 
@@ -173,17 +178,18 @@ class MainWindow(qtw.QMainWindow):
                     self.update_timer,
                     self.session
                 )
-                self.module_temperature_monitors.append(module)
-                self.main_layout.addWidget(module)
 
-                self.BB_monitor = BumpBondMonitor(
+                self.module_temperature_monitors.append(module)
+                self.module_layout.addWidget(module)
+
+                BB_monitor = BumpBondMonitor(
                     mod_config.module.name, 
                     [1,2,3,4], 
                     firmware, 
                     self.com_port,
                     self.update_timer)
                 
-                self.main_layout.addWidget(self.BB_monitor)
+                self.module_layout.addWidget(BB_monitor)
 
             self.session.commit() # this is for any new runs that have been added to the session
             self.run_banner.setText(f"Selected Run: {self.run_config.Run.run}")

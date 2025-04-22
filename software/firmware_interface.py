@@ -82,18 +82,25 @@ class ThermalMockupV2(ModuleFirmwareInterface):
             'E4': 8,
         }
 
+        self.swapped_sensor_map = dict(
+            zip(self.sensor_map.values(), self.sensor_map.keys()))
+
         self.probe_map = {
             'P1': 1,
             'P2': 2,
             'P3': 3 
         }
 
+        self.swapped_probe_map = dict(
+            zip(self.probe_map.values(), self.probe_map.keys()))
+
     def read_sensor(self, raw_output: str) -> tuple[int, str]:
         pattern = re.compile(r"^measure (\d+) (\S+)$")
         match = re.match(pattern, raw_output)
         if match:
-            bb_path_id, adc_value = match.groups()
-            return int(bb_path_id), adc_value 
+            channel, adc_value = match.groups()
+            sensor = self.swapped_sensor_map[int(channel)]
+            return sensor, adc_value 
 
     def write_sensors(self, sensors: list[str]):
         if not isinstance(sensors, list):
@@ -109,11 +116,12 @@ class ThermalMockupV2(ModuleFirmwareInterface):
         return f'measure ' + ' '.join(map(str,sensor_ids))
 
     def read_probe(self, raw_output: str) -> tuple[int, str]:
-        pattern = re.compile(r"^probe (\d+) (\S+)$")
+        pattern = re.compile(r"^Probe (\d+): (\S+)$")
         match = re.match(pattern, raw_output)
         if match:
-            bb_path_id, adc_value = match.groups()
-            return int(bb_path_id), adc_value   
+            probe_id, adc_value = match.groups()
+            probe = self.swapped_probe_map[int(probe_id)]
+            return probe, adc_value   
 
     def write_probes(self, probes: list[str]) -> str:
         if not isinstance(probes, list):

@@ -14,13 +14,25 @@ from functools import partial
 
 SENSOR_NAMES = ["E1", "E2", "E3", "E4", "L1", "L2", "L3", "L4", "P1", "P2", "P3"]
 
-class ModuleTemperatureMonitor(QWidget):
+class ModuleTemperatureMonitor(qtw.QFrame):
     """
     Used for reading out the temperatures on the thermal mockup module
     """
 
     def __init__(self, run:dm.Run, config: ModuleConfig, firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer, db_session: scoped_session):
         super(ModuleTemperatureMonitor, self).__init__()
+
+        self.setFrameShape(qtw.QFrame.Shape.Box)
+        self.setFrameShadow(qtw.QFrame.Shadow.Raised)
+        self.setLineWidth(2)
+        self.setContentsMargins(6, 6, 6, 6)
+
+        self.setStyleSheet("""
+            QFrame {
+                border: 2px solid green;        /* width, style, color */
+                background-color: white;        /* optional fill */
+            }
+        """)
 
         self.run = run
         self.config = config
@@ -52,13 +64,22 @@ class ModuleTemperatureMonitor(QWidget):
         self.main_layout = qtw.QVBoxLayout(self)
         self.setLayout(self.main_layout)
 
+        self.button = qtw.QPushButton(self.name, self)
+        self.button.setCheckable(True)
+        self.main_layout.addWidget(self.button)
+
+        ####### PLOT SETTINGS ########
+        self.plot_settings = qtw.QWidget()
+        setting_layout = qtw.QHBoxLayout()
+        self.plot_settings.setLayout(setting_layout)
+
         self.select_sensor_dropdown = qtw.QComboBox()
         self.select_sensor_dropdown.addItem('Select Sensor')
-        self.main_layout.addWidget(self.select_sensor_dropdown, stretch=0)
+        setting_layout.addWidget(self.select_sensor_dropdown, stretch=0)
 
         self.data_select_dropdown = qtw.QComboBox()
         self.data_select_dropdown.addItem('Data Type')
-        self.main_layout.addWidget(self.data_select_dropdown, stretch=0)
+        setting_layout.addWidget(self.data_select_dropdown, stretch=0)
         self.data_select_dropdown.addItem(
             "volts", "volts"
         )    
@@ -68,22 +89,29 @@ class ModuleTemperatureMonitor(QWidget):
         self.data_select_dropdown.addItem(
             "celcius", "celcius"
         )
-
         self.data_select_dropdown.setCurrentIndex(1)
+        self.main_layout.addWidget(self.plot_settings)
+        #################################
 
-        self.button = qtw.QPushButton(self.name, self)
-        self.button.setCheckable(True)
-        self.main_layout.addWidget(self.button)
 
-        self.temperature_plot = pg.plot(title="Temperature Monitor", background="#f5f5f5")
+        self.sensor_plots = {}
+        self.temperature_plot = pg.PlotWidget(title="Sensor Data Over Time", background="#f5f5f5")
+        self.temperature_plot.addLegend()
         self.temperature_plot.showGrid(x=True, y=True)
-        self.temperature_plot.setLabel('left', 'Data')
-        self.temperature_plot.setLabel('bottom', 'Minutes')
+        self.temperature_plot.setLabel('left', 'Data')  # Y-axis label
+        self.temperature_plot.setLabel('bottom', 'Minutes')  # X-axis label
+
+        for sensor in self.enabled_sensors:
+            self.select_sensor_dropdown.addItem(f"{self.name}_{sensor}", sensor)
+            # Initialize plotItem for each sensor name
+            self.sensor_plots[f"{self.name}_{sensor}"] = self.temperature_plot.plot(
+                [], [], #x, y
+                pen=self.color_map[sensor], 
+                name=f"{self.name}_{sensor}"
+            )
 
         self.button.clicked.connect(self.toggle_show)
         self.main_layout.addWidget(self.temperature_plot, stretch=1)
-
-        self.temp_save = {s: [] for s in self.enabled_sensors}
 
         self.com_port.read[str].connect(self.save)
         self.timer.timeout.connect(self.write_sensors)
@@ -91,6 +119,7 @@ class ModuleTemperatureMonitor(QWidget):
 
     def toggle_show(self):
         self.temperature_plot.setVisible(not self.temperature_plot.isVisible())
+        self.plot_settings.setVisible(not self.plot_settings.isVisible())
 
     def save(self, raw_output:str):
         # i love python
@@ -138,7 +167,7 @@ class ModuleTemperatureMonitor(QWidget):
         return command
     
     def update_plot(self):
-        for i, sensor in enumerate(self.enabled_sensors):
+        for sensor in self.enabled_sensors:
             query = select(dm.Data).where(
                 dm.Data.run==self.run, 
                 dm.Data.sensor==sensor, 
@@ -161,9 +190,8 @@ class ModuleTemperatureMonitor(QWidget):
                     y_data = [d.celcius for d in data if d.celcius is not None]              
             else:
                 elapsed_times = []
-                y_data = []             
-
-            self.temperature_plot.plot(
-                elapsed_times, y_data,
-                pen=(i, len(self.sensors))
-            )
+                y_data = []   
+                          
+            self.sensor_plots[f"{self.name}_{sensor}"].setData(
+                    elapsed_times, y_data
+                )

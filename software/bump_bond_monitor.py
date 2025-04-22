@@ -9,11 +9,23 @@ from com_port import ComPort
 from datetime import datetime
 import time
 
-class BumpBondMonitor(qtw.QWidget):
+class BumpBondMonitor(qtw.QFrame):
     # write = Signal(str)
 
     def __init__(self, name: str, bb_path_ids: list, firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer):
         super(BumpBondMonitor, self).__init__()
+
+        self.setFrameShape(qtw.QFrame.Shape.Box)
+        self.setFrameShadow(qtw.QFrame.Shadow.Raised)
+        self.setLineWidth(2)
+        self.setContentsMargins(6, 6, 6, 6)
+
+        self.setStyleSheet("""
+            QFrame {
+                border: 2px solid green;        /* width, style, color */
+                background-color: white;        /* optional fill */
+            }
+        """)
 
         self.name = name
         self.bb_path_ids = bb_path_ids
@@ -54,9 +66,7 @@ class BumpBondMonitor(qtw.QWidget):
     def save(self, raw_output: str):
         # will need to extract bb id
         # will need to extract raw_adc from it
-        print("saving")
         data = self.firmware.read_bb(raw_output)
-        print(data)
         if not data:
             return
     

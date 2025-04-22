@@ -1,17 +1,17 @@
 [RUN]
-run = 48
-# MODE = "DEBUG"
-# COLD_PLATE = "Pretty Double Loop Solder Plate"
-# COMMENT = "starting the bump bond monitor"
+#run = 54
+MODE = "DEBUG"
+COLD_PLATE = "Pretty Double Loop Solder Plate"
+COMMENT = "starting the bump bond monitor - refresh x 2"
 
 [MICROCONTROLLER]
 firmware_version = "Thermal Mockup V2"
-port = "ttyACM1"
+port = "ttyACM0"
 
 [[MODULES]]
 module = "TM2"
 cold_plate_position = 3
 orientation = "UP"
-disabled_sensors = []
+disabled_sensors = ["L1", "L2", "L3", "L4"]
 #control_board = "ControlBoardName"
 #control_board_position = "A"
