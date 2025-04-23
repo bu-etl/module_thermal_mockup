@@ -8,11 +8,18 @@ from firmware_interface import ModuleFirmwareInterface
 from com_port import ComPort
 from datetime import datetime
 import time
+from database import models as dm
+from sqlalchemy.orm import scoped_session
+from run_config import ModuleConfig
 
 class BumpBondMonitor(qtw.QFrame):
     # write = Signal(str)
 
-    def __init__(self, name: str, bb_path_ids: list, firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer):
+    def __init__(self, name: str, run: dm.Run, module_config: ModuleConfig, bb_path_ids: list[str], firmware: ModuleFirmwareInterface, com_port: ComPort, timer: QTimer, db_session: scoped_session):
+        """
+        bb_path_ids: are the ids that is used to input into the firmware. EX: TP 1, 1 is the bb_path_id
+        """
+        
         super(BumpBondMonitor, self).__init__()
 
         self.setFrameShape(qtw.QFrame.Shape.Box)
@@ -28,6 +35,8 @@ class BumpBondMonitor(qtw.QFrame):
         """)
 
         self.name = name
+        self.run = run
+        self.module_config = module_config
         self.bb_path_ids = bb_path_ids
         self.firmware = firmware
         self.com_port = com_port
@@ -80,6 +89,8 @@ class BumpBondMonitor(qtw.QFrame):
         # do the saving for now just append to list will go to db later
         # will need to pass in the db session but its fine
         self.temp_save[bb_path_id].append((time.perf_counter(), value))
+
+        #data = dm.BbResistancePathData()
     
     def write_bb(self):
         if all(self.measurement_pendings.values()):

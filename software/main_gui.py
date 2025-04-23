@@ -183,11 +183,14 @@ class MainWindow(qtw.QMainWindow):
                 self.module_layout.addWidget(module)
 
                 BB_monitor = BumpBondMonitor(
-                    mod_config.module.name, 
+                    mod_config.module.name + "_BB", 
+                    self.run_config.Run.run,
+                    mod_config,
                     [1,2,3,4], 
                     firmware, 
                     self.com_port,
-                    self.update_timer)
+                    self.update_timer,
+                    self.session)
                 
                 self.module_layout.addWidget(BB_monitor)
 

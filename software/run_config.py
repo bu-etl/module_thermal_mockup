@@ -67,6 +67,7 @@ class ModuleConfig(CaseInsensitiveModel):
     control_board: Optional[dm.ControlBoard] = None
     control_board_position: Optional[Literal['A', 'B', 'C', 'D']] = None
     disabled_sensors: list[Literal['E1', 'E2', 'E3', 'E4', 'L1', 'L2', 'L3', 'L4', 'P1', "P2", "P3"]] = []
+    reference_resistors: dict[int, float]
 
     _lowercase_orientation = field_validator('orientation', mode='before')(lower_validator)
     _module_exists_validator = field_validator('module', mode='before')(
