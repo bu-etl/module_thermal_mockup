@@ -13,7 +13,7 @@ from module import ModuleTemperatureMonitor
 from bump_bond_monitor import BumpBondMonitor
 import firmware_interface as fw
 from functools import partial
-from datetime import datetime
+from datetime import datetime, timezone
 
 COM_PORT_TIMER = 500
 UPDATE_TIMER = 10_000
@@ -134,7 +134,8 @@ class MainWindow(qtw.QMainWindow):
             return
         run_note = dm.RunNote(
             run = self.run_config.Run.run,
-            note = self.run_note_text_box.toPlainText()
+            note = self.run_note_text_box.toPlainText(),
+            timestamp = datetime.now(timezone.utc)
         )
         self.session.add(run_note)
         self.session.commit()

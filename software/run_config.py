@@ -252,6 +252,7 @@ class RunConfigModal(qtw.QDialog):
                 module_info_layout.addWidget(qtw.QLabel(f"Disabled Sensors: {module_config.disabled_sensors}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Control Board: {module_config.control_board}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Control Board Position: {module_config.control_board_position}"))
+                module_info_layout.addWidget(qtw.QLabel(f"Reference Resistors: {module_config.reference_resistors}"))
 
                 modules_layout.addWidget(module_info, i, j)
 

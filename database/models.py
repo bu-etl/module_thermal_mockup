@@ -37,8 +37,7 @@ class Module(Base):
     
     calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module", single_parent=True)
     data: Mapped[List["Data"]] = relationship(back_populates="module")
-    bb_resistnace_path: Mapped[List["BbResistancePathData"]] = relationship(back_populates="module")
-
+    bb_resistance_path_data: Mapped[List["BbResistancePathData"]] = relationship(back_populates="module")
     all_calibrations: Mapped[List["SensorCalibration"]] = relationship(back_populates="module")
     
     def calib_map(self) -> dict:
@@ -70,7 +69,7 @@ class Data(Base):
     plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
 
     sensor: Mapped[str] = mapped_column(String(50), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     raw_adc: Mapped[str] = mapped_column(String(50))
 
     @hybrid_property
@@ -122,11 +121,11 @@ class BbResistancePathData(Base):
 
     ref_resistor_value: Mapped[float] = mapped_column(Float, nullable=False)
     path_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
-    raw_voltage: Mapped[str] = mapped_column(String(50))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    raw_voltage: Mapped[float] = mapped_column(Float)
 
-    module: Mapped["Module"] = relationship(back_populates="bb_resistance_path_data")
     run: Mapped["Run"] = relationship(back_populates="bb_resistance_path_data")
+    module: Mapped["Module"] = relationship(back_populates="bb_resistance_path_data")
 
     @hybrid_property
     def ohms(self) -> float:
@@ -153,7 +152,7 @@ class RunNote(Base):
     __tablename__ = "run_note"
     id: Mapped[int] = mapped_column(primary_key=True)
     run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     note: Mapped[str] = mapped_column(String, nullable=False)
 
     run: Mapped["Run"] = relationship(back_populates="notes")

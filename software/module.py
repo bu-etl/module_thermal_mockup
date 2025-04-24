@@ -7,7 +7,7 @@ from firmware_interface import ModuleFirmwareInterface
 from com_port import ComPort
 from sqlalchemy.orm import scoped_session
 from database import models as dm
-from datetime import datetime
+from datetime import datetime, timezone
 from run_config import ModuleConfig
 from sqlalchemy import select
 from functools import partial
@@ -142,7 +142,7 @@ class ModuleTemperatureMonitor(qtw.QFrame):
             module_orientation = self.config.orientation,
             plate_position = self.config.cold_plate_position,
             sensor = sensor,
-            timestamp = datetime.now(),
+            timestamp = datetime.now(timezone.utc),
             raw_adc = raw_value
         )
 
@@ -187,7 +187,7 @@ class ModuleTemperatureMonitor(qtw.QFrame):
             elif self.data_select_dropdown.currentData() == "ohms":
                 y_data = [d.ohms for d in data if d.ohms is not None]
             elif self.data_select_dropdown.currentData() == "celcius":
-                    y_data = [d.celcius for d in data if d.celcius is not None]              
+                y_data = [d.celcius for d in data if d.celcius is not None]              
             else:
                 elapsed_times = []
                 y_data = []   
