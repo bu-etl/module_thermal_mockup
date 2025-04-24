@@ -129,6 +129,8 @@ class BbResistancePathData(Base):
 
     @hybrid_property
     def ohms(self) -> float:
+        if self.raw_voltage == 3.3:
+            return 0
         return self.raw_voltage * self.ref_resistor_value / (3.3 - self.raw_voltage)
 
 class Run(Base):

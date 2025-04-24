@@ -95,6 +95,8 @@ class ThermalMockupV2(ModuleFirmwareInterface):
             zip(self.probe_map.values(), self.probe_map.keys()))
 
     def read_sensor(self, raw_output: str) -> tuple[int, str]:
+        if len(raw_output) != 16:
+            return
         pattern = re.compile(r"^measure (\d+) (\S+)$")
         match = re.match(pattern, raw_output)
         if match:
@@ -116,6 +118,8 @@ class ThermalMockupV2(ModuleFirmwareInterface):
         return f'measure ' + ' '.join(map(str,sensor_ids))
 
     def read_probe(self, raw_output: str) -> tuple[int, str]:
+        if len(raw_output) != 14:
+            return
         pattern = re.compile(r"^Probe (\d+): (\S+)$")
         match = re.match(pattern, raw_output)
         if match:
@@ -153,6 +157,8 @@ class ThermalMockupV2(ModuleFirmwareInterface):
     def read_bb(self, raw_output: str) -> tuple[int, float]:
         """Returns the bump bond path id and the corresponding value if string matches"""
         if not isinstance(raw_output, str):
+            return
+        if len(raw_output) != 8:
             return
         pattern = re.compile(r"^TP(\d+) (\S+)$")
         match = re.match(pattern, raw_output)

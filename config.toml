@@ -12,7 +12,7 @@ port = "ttyACM0"
 module = "TM2"
 cold_plate_position = 3
 orientation = "UP"
-disabled_sensors = ["L1", "L2", "L3", "L4"]
+disabled_sensors = []
 
 # path_id: ref_resistor_value
 reference_resistors = {1=984, 2=990, 3=984, 4=984}

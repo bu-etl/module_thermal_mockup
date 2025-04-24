@@ -61,10 +61,10 @@ class BumpBondMonitor(qtw.QFrame):
         self.bb_resistance_plot.setLabel('bottom', 'Minutes')
 
 
-        for bb_path in self.bb_path_ids:
+        for i, bb_path in enumerate(self.bb_path_ids):
             self.bb_plots[f"{self.name}_{bb_path}"] = self.bb_resistance_plot.plot(
                 [], [], #x, y
-                #pen=self.color_map[sensor], 
+                pen=(i, bb_path), 
                 name=f"{self.name}_{bb_path}"
             )
 
