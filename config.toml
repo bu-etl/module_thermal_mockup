@@ -1,8 +1,8 @@
 [RUN]
 #run = 54
-MODE = "DEBUG"
+MODE = "REAL"
 COLD_PLATE = "Pretty Double Loop Solder Plate"
-COMMENT = "starting the bump bond monitor - refresh x 2"
+COMMENT = "Repeating previous run with constant flow of CO2"
 
 [MICROCONTROLLER]
 firmware_version = "Thermal Mockup V2"

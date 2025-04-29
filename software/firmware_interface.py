@@ -118,7 +118,7 @@ class ThermalMockupV2(ModuleFirmwareInterface):
         return f'measure ' + ' '.join(map(str,sensor_ids))
 
     def read_probe(self, raw_output: str) -> tuple[int, str]:
-        if len(raw_output) != 14:
+        if len(raw_output) not in [14,15]:
             return
         pattern = re.compile(r"^Probe (\d+): (\S+)$")
         match = re.match(pattern, raw_output)
