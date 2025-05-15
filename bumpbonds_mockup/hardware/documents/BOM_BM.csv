@@ -1,0 +1,11 @@
+#,Qty,Reference,Value,Datasheet,Link to Buy,Qty to Buy,Price per each,Total
+1,8,"C6,C9,C11,C13,C15,C17,C18,C19",0.1uF,~,,,,
+2,6,"C7,C8,C10,C12,C14,C16",10uF,~,,,,
+3,36,"E1,E2,E3,E4,L1,L2,L3,L4,TP1,TP2,TP3,TP4,TP5,TP6,TP7,TP8,TP9,TP10,TP11,TP12,TP13,TP14,TP15,TP16,TP17,TP18,TP19,TP20,TP21,TP22,TP23,TP24,TP25,TP26,TP27,TP28",TestPoint,~,,~,,
+4,1,J2,Conn_02x05_Counter_Clockwise,~,,,,
+5,2,"R3,R4",40k,~,,50,,
+6,8,"R5,R6,R7,R8,R9,R10,R11,R12",1k,https://www.digikey.com/en/products/detail/vishay-dale/TNPU08051K00AWEN00/11618132,,100,,
+7,4,"R13,R14,R15,R16",3k3,https://www.digikey.com/en/products/detail/vishay-dale/TNPU08051K00AWEN00/11618132,,50,,
+8,4,"U1,U2,U3,U4",ETROC_bumpbond_dummy,~,~,~,,
+9,3,"U6,U8,U9",ADS7953,https://www.ti.com/lit/ds/symlink/ads7950.pdf?HQS=dis-dk-null-digikeymode-dsf-pf-null-wwe&ts=1747038448109&ref_url=https%253A%252F%252Fwww.ti.com%252Fgeneral%252Fdocs%252Fsuppproductinfo.tsp%253FdistId%253D10%2526gotoUrl%253Dhttps%253A%252F%252Fwww.ti.com%252Flit%252Fgpn%252Fads7950,https://www.digikey.com/en/products/detail/texas-instruments/ADS7953SDBTR/1895852,15,$6.55 ,$98.27 
+10,2,"U7,U10",TMP121,https://www.ti.com/lit/ds/symlink/tmp121.pdf?ts=1710966626381&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FTMP121,https://www.digikey.com/en/products/detail/texas-instruments/TMP121AIDBVR/1670034,10,$1.75 ,$17.45 

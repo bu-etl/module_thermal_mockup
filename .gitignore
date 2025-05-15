@@ -1,5 +1,11 @@
+# Python
 /database/env.py
 __pycache__
 /control-board/software/soft-v1/run_configs/
+
+# Kicad
 *-backups/
 fp-info-cache
+
+# MacOS
+.DS_Store

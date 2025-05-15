@@ -1,31 +1,14 @@
-Date:,"2024 April 02, Tuesday 12:42:46",,,,,,,,
-Tool:,Eeschema 7.0.7,,,,,,,,
-Generator:,/Applications/KiCad/KiCad.app/Contents/SharedSupport/plugins/bom_csv_grouped_by_value.py,,,,,,,,
-Component Count:,48,,,,,,,,
-,,,,,,,,,
-Collated Components:,,,,,,,,,
-,,,,,,,,,
-Item,Qty,Reference(s),Value,LibPart,Footprint,Datasheet,Link to buy,Qty to Order,Price
-1,12,"2.5V1, 5V1, E1, E2, E3, E4, GND1, L1, L2, L3, L4, VCC1",TestPoint,Connector:TestPoint,TestPoint:TestPoint_Pad_1.0x1.0mm,~,,~,
-2,1,C1,1uF,Device:C,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,https://www.digikey.com/en/products/detail/kemet/C0805C105J4REC7210/19187141?utm_adgroup=&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Product_Medium%20ROAS%20Categories&utm_term=&utm_content=&utm_id=go_cmp-20223376311_adg-_ad-__dev-c_ext-_prd-19187141_sig-EAIaIQobChMIouDO-P2jhQMVSl1HAR0OSAfzEAQYASABEgLOm_D_BwE&gad_source=1&gclid=EAIaIQobChMIouDO-P2jhQMVSl1HAR0OSAfzEAQYASABEgLOm_D_BwE,10,$1.96 
-3,4,"C2, C6, C7, C8",0.1uF,Device:C,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,https://www.digikey.com/en/products/detail/kemet/C0805C104K4RECAUTO/13228450?utm_adgroup=&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Product_Medium%20ROAS%20Categories&utm_term=&utm_content=&utm_id=go_cmp-20223376311_adg-_ad-__dev-c_ext-_prd-13228450_sig-EAIaIQobChMIrsO7sv6jhQMVHG9HAR31VwkMEAQYASABEgKZf_D_BwE&gad_source=1&gclid=EAIaIQobChMIrsO7sv6jhQMVHG9HAR31VwkMEAQYASABEgKZf_D_BwE,50,$5.70 
-4,1,C3,10uF,Device:C,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/CC0805KPX5R6BB106/11611362?utm_adgroup=Yageo&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Supplier_Yageo&utm_term=&utm_content=Yageo&utm_id=go_cmp-17816160916_adg-_ad-__dev-c_ext-_prd-11611362_sig-EAIaIQobChMItqL1hf-jhQMVmVtHAR297AjjEAQYAyABEgLLXfD_BwE&gad_source=1&gclid=EAIaIQobChMItqL1hf-jhQMVmVtHAR297AjjEAQYAyABEgLLXfD_BwE,10,$1.19 
-5,2,"C4, C5",33pF,Device:C,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,https://www.digikey.com/en/products/detail/kemet/C0805C330G1GAC7800/16679813?utm_adgroup=&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Product_Medium%20ROAS%20Categories&utm_term=&utm_content=&utm_id=go_cmp-20223376311_adg-_ad-__dev-c_ext-_prd-16679813_sig-EAIaIQobChMIoOzfuP-jhQMVh0tHAR2pDwHgEAQYASABEgLqI_D_BwE&gad_source=1&gclid=EAIaIQobChMIoOzfuP-jhQMVh0tHAR2pDwHgEAQYASABEgLqI_D_BwE,50,$15.86 
-6,1,J1,Conn_02x06_Counter_Clockwise,Connector_Generic:Conn_02x06_Counter_Clockwise,Connector_PinHeader_2.54mm:PinHeader_2x06_P2.54mm_Vertical_SMD,~,https://www.digikey.com/en/products/detail/adam-tech/PH2-12-UA/9830397,10,$1.71 
-7,2,"JMPR1, JMPR2",0,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/RC0805FR-070RL/2827937?utm_adgroup=Yageo&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Supplier_Yageo&utm_term=&utm_content=Yageo&utm_id=go_cmp-17816160916_adg-_ad-__dev-c_ext-_prd-2827937_sig-Cj0KCQjw2a6wBhCVARIsABPeH1sPK6PnnDuY0QxT-3RH39c8wb9ilH3rfpjCymFA3Pk_7XI9P2ECx5kaAuzlEALw_wcB&gad_source=1&gclid=Cj0KCQjw2a6wBhCVARIsABPeH1sPK6PnnDuY0QxT-3RH39c8wb9ilH3rfpjCymFA3Pk_7XI9P2ECx5kaAuzlEALw_wcB,25,$0.59 
-8,2,"R1, R2",12.6,Device:R,unl_silab:ETROC_Heater_Serpantine,~,,~,
-9,2,"R3, R4",40k,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/RC0805FR-0740K2L/727941,50,$0.80 
-10,8,"R5, R6, R7, R8, R9, R10, R11, R12",1k,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,https://www.digikey.com/en/products/detail/vishay-dale/TNPU08051K00AWEN00/11618132,https://www.digikey.com/en/products/detail/yageo/RC0805FR-071KL/727444,50,$0.80 
-11,2,"R13, R14",1M,Device:R,Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,~,https://www.digikey.com/en/products/detail/yageo/RC0805FR-071MP/16998891?utm_adgroup=Yageo&utm_source=google&utm_medium=cpc&utm_campaign=PMax%20Shopping_Supplier_Yageo&utm_term=&utm_content=Yageo&utm_id=go_cmp-17816160916_adg-_ad-__dev-c_ext-_prd-16998891_sig-Cj0KCQjw2a6wBhCVARIsABPeH1vXq8jhVhcd8mqk05X6kSoArQ_ob-2C46muu8s2HEyHS6fuCAayC9UaArrcEALw_wcB&gad_source=1&gclid=Cj0KCQjw2a6wBhCVARIsABPeH1vXq8jhVhcd8mqk05X6kSoArQ_ob-2C46muu8s2HEyHS6fuCAayC9UaArrcEALw_wcB,50,$1.31 
-12,1,RV1,25k,Device:R_Potentiometer,Potentiometer_SMD:Potentiometer_Bourns_3224W_Vertical,~,,, 
-13,1,U1,ETROC_dummy_thermal_sensors,:ETROC_dummy_thermal_sensors_1,unl_silab:PCB_ETROC2_dummy,~,,~,
-14,1,U2,ETROC_dummy_thermal_sensors,:ETROC_dummy_thermal_sensors_3,unl_silab:PCB_ETROC2_dummy,~,,~,
-15,1,U3,ETROC_dummy_thermal_sensors,unl_silab:ETROC_dummy_thermal_sensors,unl_silab:PCB_ETROC2_dummy,~,,~,
-16,1,U4,ETROC_dummy_thermal_sensors,:ETROC_dummy_thermal_sensors_2,unl_silab:PCB_ETROC2_dummy,~,,~,
-17,1,U5,AD77x8,unl_silab:AD77x8,Package_SO:SOIC-28W_7.5x18.7mm_P1.27mm,https://www.analog.com/media/en/technical-documentation/data-sheets/AD7708_7718.pdf,https://www.digikey.com/en/products/detail/analog-devices-inc/AD780ARZ-REEL7/995667,5,$76.25 
-18,1,U6,AD780,unl_silab:AD780,Package_SO:SOIC-8_3.9x4.9mm_P1.27mm,,https://www.digikey.com/en/products/detail/analog-devices-inc/AD7708BRZ-REEL/994898,5,$56.00 
-19,3,"U7, U8, U9",TMP121,Sensor_Temperature:TMP121,Package_TO_SOT_SMD:SOT-23-6,https://www.ti.com/lit/ds/symlink/tmp121.pdf?ts=1710966626381&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FTMP121,https://www.digikey.com/en/products/detail/texas-instruments/TMP121AIDBVR/1670034,15,$38.58 
-20,1,Y1,32kHz,Device:Crystal,Crystal:Crystal_SMD_3215-2Pin_3.2x1.5mm,~,https://www.digikey.com/en/products/detail/raltron-electronics/RT3215-32-768-12-5-TR/10273025,10,$3.81 
-,,,,,,,,,
-Total: ,$207.12 ,,,,,,,,
-Digikey Cart,,,,,,,,,
+"#","Qty","Reference","Value","Datasheet","Link to Buy","Qty to Buy","Price for total Qty"
+"1","4","U1,U2,U3,U4","ETROC_bumpbond_dummy","","","",""
+"2","1","U5","AD77x8","https://www.analog.com/media/en/technical-documentation/data-sheets/AD7708_7718.pdf","","",""
+"3","8","R5,R6,R7,R8,R9,R10,R11,R12","1k","https://www.digikey.com/en/products/detail/vishay-dale/TNPU08051K00AWEN00/11618132","","",""
+"4","3","U7,U8,U9","TMP121","https://www.ti.com/lit/ds/symlink/tmp121.pdf?ts=1710966626381&ref_url=https%253A%252F%252Fwww.ti.com%252Fproduct%252FTMP121","","",""
+"5","4","C2,C6,C7,C8","0.1uF","~","","",""
+"6","1","C3","10uF","~","","",""
+"7","2","C4,C5","33pF","~","","",""
+"8","45","E1,E2,E3,E4,L1,L2,L3,L4,T1:1,T1:2,T1:3,T1:4,T1:5,T1:6,T1:7,T1:8,T1:9,T2:1,T2:2,T2:3,T2:4,T2:5,T2:6,T2:7,T2:8,T2:9,T3:1,T3:2,T3:3,T3:4,T3:5,T3:6,T3:7,T3:8,T3:9,T4:1,T4:2,T4:3,T4:4,T4:5,T4:6,T4:7,T4:8,T4:9,VCC1","TestPoint","~","","",""
+"9","1","J1","Conn_02x06_Counter_Clockwise","~","","",""
+"10","2","R1,R2","12.6","~","","",""
+"11","2","R3,R4","40k","~","","",""
+"12","1","R14","1M","~","","",""
+"13","1","Y1","32kHz","~","","",""
