@@ -1,0 +1,20 @@
+[RUN]
+#run = 54
+MODE = "REAL"
+COLD_PLATE = "Pretty Double Loop Solder Plate"
+COMMENT = "Repeating previous run with constant flow of CO2"
+
+[MICROCONTROLLER]
+firmware_version = "Thermal Mockup V2"
+port = "ttyACM0"
+
+[[MODULES]]
+module = "TM2"
+cold_plate_position = 3
+orientation = "UP"
+disabled_sensors = []
+
+# path_id: ref_resistor_value
+reference_resistors = {1=984, 2=990, 3=984, 4=984}
+#control_board = "ControlBoardName"
+#control_board_position = "A"

@@ -6,7 +6,7 @@ from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtSvgWidgets import QSvgWidget
 import tomllib
 from pydantic import ValidationError
-import os
+from pathlib import Path
 import database.models as dm
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -14,7 +14,6 @@ from itertools import zip_longest
 from firmware_interface import available_firmwares
 from functools import partial
 
-PATH_OF_SCRIPT:str =  os.path.dirname(os.path.abspath(__file__))
 AVAILABLE_FIRMWARES:list[str] = available_firmwares()
 
 def gridded_list(array: list, n_cols: int) -> list[tuple]:
@@ -67,7 +66,8 @@ class ModuleConfig(CaseInsensitiveModel):
     orientation: Optional[Literal['up', 'down']] = None
     control_board: Optional[dm.ControlBoard] = None
     control_board_position: Optional[Literal['A', 'B', 'C', 'D']] = None
-    disabled_sensors: list[Literal['E1', 'E2', 'E3', 'E4', 'L1', 'L2', 'L3', 'L4']] = []
+    disabled_sensors: list[Literal['E1', 'E2', 'E3', 'E4', 'L1', 'L2', 'L3', 'L4', 'P1', "P2", "P3"]] = []
+    reference_resistors: dict[int, float]
 
     _lowercase_orientation = field_validator('orientation', mode='before')(lower_validator)
     _module_exists_validator = field_validator('module', mode='before')(
@@ -158,7 +158,7 @@ class RunConfigModal(qtw.QDialog):
         self.main_layout = qtw.QVBoxLayout(self)
 
         self.config_file_btn = qtw.QPushButton("Select Config File")
-        self.config_file_btn.clicked.connect(self.load_run_config)
+        self.config_file_btn.clicked.connect(self.select_config_file)
         self.main_layout.addWidget(self.config_file_btn)
 
         self.config_preview = qtw.QWidget()
@@ -175,14 +175,26 @@ class RunConfigModal(qtw.QDialog):
         self.buttonBox.rejected.connect(self.reject)
         self.main_layout.addWidget(self.buttonBox)
 
+
+        current_file_dir = Path(__file__).resolve().parent
+        default_config = current_file_dir.parent / "config.toml"
+        if default_config.is_file():
+            self.load_config(str(default_config))
+
     @Slot()
-    def load_run_config(self) -> None:
+    def select_config_file(self) -> None:
         file_path, _ = qtw.QFileDialog.getOpenFileName(
             self, 
             "Select Config File", 
             None,
             "TOML (*.toml)"
         )
+        if not file_path:
+            # then they exited without selecing file
+            return None
+        self.load_config(file_path)
+
+    def load_config(self, file_path: str):
         if not file_path:
             # then they exited without selecing file
             return None
@@ -196,7 +208,7 @@ class RunConfigModal(qtw.QDialog):
         except ValidationError as error:
             print(error)
             self.raise_crit_message("Config Failure", str(str([e['msg'] for e in error.errors()])))
-
+  
     def add_run_visual(self, run: dm.Run) -> None:
         # Centered put the Run ID = ... then mode then comment
         run_info = qtw.QGroupBox("Run Info")
@@ -240,6 +252,7 @@ class RunConfigModal(qtw.QDialog):
                 module_info_layout.addWidget(qtw.QLabel(f"Disabled Sensors: {module_config.disabled_sensors}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Control Board: {module_config.control_board}"))
                 module_info_layout.addWidget(qtw.QLabel(f"Control Board Position: {module_config.control_board_position}"))
+                module_info_layout.addWidget(qtw.QLabel(f"Reference Resistors: {module_config.reference_resistors}"))
 
                 modules_layout.addWidget(module_info, i, j)
 

@@ -37,7 +37,7 @@ class Module(Base):
     
     calibration: Mapped["ModuleCalibration"] = relationship(back_populates="module", single_parent=True)
     data: Mapped[List["Data"]] = relationship(back_populates="module")
-
+    bb_resistance_path_data: Mapped[List["BbResistancePathData"]] = relationship(back_populates="module")
     all_calibrations: Mapped[List["SensorCalibration"]] = relationship(back_populates="module")
     
     def calib_map(self) -> dict:
@@ -69,7 +69,7 @@ class Data(Base):
     plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
 
     sensor: Mapped[str] = mapped_column(String(50), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     raw_adc: Mapped[str] = mapped_column(String(50))
 
     @hybrid_property
@@ -110,7 +110,29 @@ class Data(Base):
 
     def __repr__(self) -> str:
         return f"Data(id={self.id!r}, module_id={self.module_id!r}, sensor={self.sensor!r}, timestamp={self.timestamp!r}, raw_adc={self.raw_adc!r}, voltage={self.volts!r}, resistance={self.ohms!r}, temperature={self.celcius!r})"
-    
+
+class BbResistancePathData(Base):
+    __tablename__ = "bb_resistance_path_data"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False, index=True)
+    module_id: Mapped[int] = mapped_column(ForeignKey("module.id"), index=True, nullable=False)
+    module_orientation: Mapped[str] = mapped_column(String(50), nullable=True) # up or down, relative to the beam pipe
+    plate_position: Mapped[int] = mapped_column(Integer, nullable=True) # 1, 2, 3, 4, etc...
+
+    ref_resistor_value: Mapped[float] = mapped_column(Float, nullable=False)
+    path_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    raw_voltage: Mapped[float] = mapped_column(Float)
+
+    run: Mapped["Run"] = relationship(back_populates="bb_resistance_path_data")
+    module: Mapped["Module"] = relationship(back_populates="bb_resistance_path_data")
+
+    @hybrid_property
+    def ohms(self) -> float:
+        if self.raw_voltage == 3.3:
+            return 0
+        return self.raw_voltage * self.ref_resistor_value / (3.3 - self.raw_voltage)
+
 class Run(Base):
     __tablename__ = "run"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -120,6 +142,7 @@ class Run(Base):
     
     cold_plate: Mapped["ColdPlate"] = relationship(back_populates="run")
     data: Mapped[List["Data"]] = relationship(back_populates="run")
+    bb_resistance_path_data: Mapped[List["BbResistancePathData"]] = relationship(back_populates="run")
 
     notes: Mapped[List["RunNote"]] = relationship(back_populates="run")
 
@@ -131,7 +154,7 @@ class RunNote(Base):
     __tablename__ = "run_note"
     id: Mapped[int] = mapped_column(primary_key=True)
     run_id: Mapped[int] = mapped_column(ForeignKey("run.id"), nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     note: Mapped[str] = mapped_column(String, nullable=False)
 
     run: Mapped["Run"] = relationship(back_populates="notes")
