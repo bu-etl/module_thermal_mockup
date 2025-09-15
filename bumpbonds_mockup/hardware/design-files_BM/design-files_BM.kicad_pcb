@@ -22890,7 +22890,7 @@
 		(at 43.12 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:4"
+		(property "Reference" "TP2:4"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "e65506bd-e833-4502-b447-84d18a9e71c4")
@@ -23056,7 +23056,7 @@
 		(at 16.87 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:6"
+		(property "Reference" "TP0:6"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "79be6d39-5992-4795-a828-6f0876eabb98")
@@ -23428,7 +23428,7 @@
 		(at 34.12 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:8"
+		(property "Reference" "TP2:8"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "2768c2db-d755-4eba-90e3-1b46fc8130a1")
@@ -24212,7 +24212,7 @@
 		(at 52.12 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:8"
+		(property "Reference" "TP3:8"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "166381fc-5799-49ec-9fd6-801999caf1ab")
@@ -24710,7 +24710,7 @@
 		(at 45.37 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:3"
+		(property "Reference" "TP2:3"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "5393ca32-be4b-41c8-9311-42ff297ac7d5")
@@ -25248,7 +25248,7 @@
 		(at 40.87 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:3"
+		(property "Reference" "TP3:3"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "e07989c1-37d1-4324-ba20-127c56d26970")
@@ -25952,7 +25952,7 @@
 		(at 14.62 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:7"
+		(property "Reference" "TP0:7"
 			(at 0 -1.28 180)
 			(layer "B.SilkS")
 			(uuid "939e2f0f-d927-412d-a670-6ea2a6452a9f")
@@ -26118,7 +26118,7 @@
 		(at 47.62 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:6"
+		(property "Reference" "TP3:6"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "9d1fa473-7216-4b63-aeb2-febca3308ab3")
@@ -26284,7 +26284,7 @@
 		(at 36.37 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:7"
+		(property "Reference" "TP2:7"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "43d01797-9af7-4d0e-a6c5-63c206bbaeaf")
@@ -26862,7 +26862,7 @@
 		(at 38.62 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:6"
+		(property "Reference" "TP2:6"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "ec19f764-e25c-4a8a-8b7c-4aa4219faee2")
@@ -29509,7 +29509,7 @@
 		(at 43.12 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:4"
+		(property "Reference" "TP3:4"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "ac8aadc4-e8cb-4d26-8fe4-9cb9b9280cec")
@@ -29675,7 +29675,7 @@
 		(at 19.12 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:5"
+		(property "Reference" "TP0:5"
 			(at 0 -1.3 180)
 			(layer "B.SilkS")
 			(uuid "493a7197-ef0f-4727-a74c-ff1194f579b6")
@@ -29841,7 +29841,7 @@
 		(at 25.87 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:2"
+		(property "Reference" "TP0:2"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "c2aa6689-3e3d-4bdc-bbc0-5362e534d955")
@@ -30007,7 +30007,7 @@
 		(at 49.87 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:7"
+		(property "Reference" "TP3:7"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "4e13a7cb-e6a7-41e4-b662-533ce218e183")
@@ -30545,7 +30545,7 @@
 		(at 40.87 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:5"
+		(property "Reference" "TP2:5"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "9e139d6f-0adf-4b30-b57f-2311c026f103")
@@ -32967,7 +32967,7 @@
 		(at 47.62 16.24)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP4:2"
+		(property "Reference" "TP2:2"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "c4be4a66-e2e7-4aeb-b9ec-aa09c22975d1")
@@ -33505,7 +33505,7 @@
 		(at 23.62 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:3"
+		(property "Reference" "TP0:3"
 			(at -0.02 -1.34 180)
 			(layer "B.SilkS")
 			(uuid "a8687b66-ffb0-4e6f-8b07-1022fa8b89c3")
@@ -35159,7 +35159,7 @@
 		(at 21.37 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:4"
+		(property "Reference" "TP0:4"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "14c84477-60a7-445c-bfbc-8e60bc8dc2c5")
@@ -35325,7 +35325,7 @@
 		(at 45.37 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:5"
+		(property "Reference" "TP3:5"
 			(at 0 -1.24 180)
 			(layer "B.SilkS")
 			(uuid "c0e8d54a-2c7a-4562-8a18-6041e2977f82")
@@ -36304,7 +36304,7 @@
 		(at 38.62 60.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP2:2"
+		(property "Reference" "TP3:2"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "835191c4-28ce-40ea-b225-ba09103f4eb4")
@@ -36963,7 +36963,7 @@
 		(at 12.37 15.99)
 		(descr "SMD rectangular pad as test Point, square 1.0mm side length")
 		(tags "test point SMD pad rectangle square")
-		(property "Reference" "TP3:8"
+		(property "Reference" "TP0:8"
 			(at 0 1.448 180)
 			(layer "B.SilkS")
 			(uuid "c4444907-40d8-4e97-ae7a-80c5dc47aa62")
@@ -37648,6 +37648,54 @@
 		(layer "Edge.Cuts")
 		(uuid "901d632a-e36e-495c-9997-bb8915482ebd")
 	)
+	(gr_text "ETROC 3"
+		(at 45.5 66.75 0)
+		(layer "F.SilkS")
+		(uuid "41bb22b6-fc22-4b3b-9950-762437f54473")
+		(effects
+			(font
+				(size 0.75 0.75)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "ETROC 1"
+		(at 14 66.75 0)
+		(layer "F.SilkS")
+		(uuid "6d775613-80c7-4232-a62d-ba4f1ba3c5a5")
+		(effects
+			(font
+				(size 0.75 0.75)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "ETROC 0"
+		(at 14.75 11.5 0)
+		(layer "F.SilkS")
+		(uuid "d4efdf0f-54cc-4bf7-9197-d07e7c313df4")
+		(effects
+			(font
+				(size 0.75 0.75)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
+	(gr_text "ETROC 3"
+		(at 44 11.5 0)
+		(layer "F.SilkS")
+		(uuid "fe0122b7-9a8d-43f3-ba50-793e4954a5b1")
+		(effects
+			(font
+				(size 0.75 0.75)
+				(thickness 0.1)
+			)
+			(justify left bottom)
+		)
+	)
 	(gr_text "Chip Num"
 		(at 32.075 34.97 0)
 		(layer "B.SilkS")
@@ -37685,7 +37733,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "2"
+	(gr_text "3"
 		(at 33.7 40.5 0)
 		(layer "B.SilkS")
 		(uuid "5b7e1472-38e7-40c1-9108-e15731567d86")
@@ -37721,7 +37769,7 @@
 			(justify left mirror)
 		)
 	)
-	(gr_text "4"
+	(gr_text "2"
 		(at 33.75 37.25 0)
 		(layer "B.SilkS")
 		(uuid "b7f80af6-0b95-4e9c-9db4-751152a1cb64")
@@ -37745,7 +37793,7 @@
 			(justify right mirror)
 		)
 	)
-	(gr_text "3"
+	(gr_text "0"
 		(at 30.55 37.25 0)
 		(layer "B.SilkS")
 		(uuid "d292c4fa-39fb-4392-9f99-d8e29b11f4d7")
