@@ -6,6 +6,7 @@ __pycache__
 # Kicad
 *-backups/
 fp-info-cache
+*.lck
 
 # MacOS
 .DS_Store

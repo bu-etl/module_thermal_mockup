@@ -37684,7 +37684,7 @@
 			(justify left bottom)
 		)
 	)
-	(gr_text "ETROC 3"
+	(gr_text "ETROC 2"
 		(at 44 11.5 0)
 		(layer "F.SilkS")
 		(uuid "fe0122b7-9a8d-43f3-ba50-793e4954a5b1")
@@ -37745,7 +37745,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "~{ADC1}\nDIN\nGND\n+5V\n~{ADC3}  "
+	(gr_text "~{ADC1}\nDIN\nGND\n+5V\n~{ADC2}  "
 		(at 53.435 41.755 0)
 		(layer "B.SilkS")
 		(uuid "6dd12c01-1829-4ea3-a948-5a5b56adad73")
